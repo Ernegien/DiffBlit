@@ -100,6 +100,9 @@
     <Compile Include="IO\ReadOnlyFile.cs" />
     <Compile Include="Config\Snapshot.cs" />
     <Compile Include="Utilities\ActionJsonConverter.cs" />
+    <Compile Include="Utilities\GZipWebClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Utilities\VersionJsonConverter.cs" />
   </ItemGroup>
   <ItemGroup>

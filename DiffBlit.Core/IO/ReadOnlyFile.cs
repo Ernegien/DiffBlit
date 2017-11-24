@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using DiffBlit.Core.Utilities;
 
 namespace DiffBlit.Core.IO
 {
@@ -32,7 +33,7 @@ namespace DiffBlit.Core.IO
             if (Path.Scheme == Uri.UriSchemeHttp || Path.Scheme == Uri.UriSchemeHttps ||
                 Path.Scheme == Uri.UriSchemeFtp && string.IsNullOrWhiteSpace(Path.UserInfo))
             {
-                using (WebClient client = new WebClient())
+                using (GZipWebClient client = new GZipWebClient())
                 {
                     return new ReadOnlyStream(client.OpenRead(Path));
                 }
