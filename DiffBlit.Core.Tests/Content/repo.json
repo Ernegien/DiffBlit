@@ -1,0 +1,79 @@
+﻿{
+  "Id": "4d41315e-aba2-4c80-99ef-2ac65388a81c",
+  "DateTime": "11/21/2017 18:36:20.42",
+  "Name": "Stable",
+  "Description": "This is the main stable release repository.",
+  "SnapshotPath": "",
+  "PackagePath": "", 
+  "Attributes": {
+    "CustomAttribute1": "Attribute value"
+  },
+  "Snapshots": [
+    {
+      "Id": "8a148d46-8865-48a4-9855-311255132a5f",
+      "DateTime": "11/21/2017 18:36:20.52",
+      "Name": "",
+      "Description": "Initial release",
+      "Version": "1.0.10.2357",
+      "Attributes": {
+        "GitRevision": "1234567"
+      },
+      "Content": [
+        {
+          "Path": "path/file.ext",
+          "Hash": "Ec2KOA6NX9OsR8H4gDkDQdQLEUheiulG2Po9Rm8j/ok="
+        }
+      ]
+    }
+  ],
+  "Packages": [
+    {
+      "Id": "b7f75d8a-926b-4441-baa4-c3812940be32",
+      "DateTime": "11/21/2017 18:36:20.62",
+      "SourceSnapshotId": "8a148d46-8865-48a4-9855-311255132a5f",
+      "TargetSnapshotId": "9d463722-07cf-4437-a20d-d36b90d759e1",
+      "Name": "",
+      "Description": "Patches original release to version X.",
+      "Attributes": {
+        "ChangeLog": "Changelog goes here"
+      },
+      "Actions": [
+        {
+          "Type": "patch",
+          "SourcePath": "originalfile.txt",
+          "TargetPath": "patchedfile.txt",
+          "Algorithm": "bsdiff",
+          "Content": [
+            {
+              "Path": "fileXPart0.jar",
+              "Hash": "4wJEVi2pJK/GCzH3zwfd0tGdTyxcloTUxsLJaHB6zsI="
+            },
+            {
+              "Path": "fileXPart1.jar",
+              "Hash": "/6hUHoOXGVtaA9wi3RPwyNA4PncBJLyR1cXyR6fCQAY="
+            }
+          ]
+        },
+        {
+          "Type": "add",
+          "TargetPath": "filetobecreated.txt",
+          "Content": [
+            {
+              "Path": "fileYPart0.jar",
+              "Hash": "DglZvW20H+IlU8HWnBPbiC+CXGdw+0Hbr+WL9af0Pbo="
+            }
+          ]
+        },
+        {
+          "Type": "remove",
+          "TargetPath": "filetobedeleted.txt"
+        },
+        {
+          "Type": "move",
+          "SourcePath": "oldpath/oldfile.txt",
+          "TargetPath": "newpath/newfile.txt"
+        }
+      ]
+    }
+  ]
+}

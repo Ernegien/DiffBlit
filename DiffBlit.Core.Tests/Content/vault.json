@@ -1,0 +1,30 @@
+﻿{
+  "Issuers": [
+    {
+      "Id": "b509be79-32e0-41eb-ac6c-2a9f7a4143d0",
+      "DateTime": "11/21/2017 18:36:20.82",
+      "Name": "Mike Davis",
+      "Aliases": [
+        "Ernegien"
+      ],
+      "Description": "",
+      "Website": "",
+      "Keys": [
+        {
+          "Id": "ab9e531b-9146-460f-98c1-8ce2d98b83da",
+          "Key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCEu4KJyxbLQih/cQLYv0jeh+y9OsUii0rqgNa5jQRomm51EpxlPtJOVy7NyESBaLqc6JJwmRPrc1tZAytXHBQ7ygHcBxdbNAV17T+LhahkdRVbmPF314FuzCX3pSY3TlKmfJfjv7ePBHQUJlOFx4Vget+9uQDV6VFhUhSq7VQ2IQIDAQAB"
+        }
+      ],
+      "Attributes": {
+        "CustomAttribute1": "Attribute value"
+      }
+    }
+  ],
+  "Signatures": [
+    {
+      "ContentHash": "base64hashgoeshere",
+      "KeyId": "ab9e531b-9146-460f-98c1-8ce2d98b83da",
+      "Signature": ""
+    }
+  ] 
+}
