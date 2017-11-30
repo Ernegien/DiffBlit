@@ -39,7 +39,7 @@ namespace DiffBlit.Core.Tests
                 var repo = new Repository();
                 repo.Name = "Test Repo Name";
                 repo.Description = "Test Repo Description";
-
+                
                 string sourceContentPath = Path.Combine(Environment.CurrentDirectory, "content\\source");
                 string targetContentPath = Path.Combine(Environment.CurrentDirectory, "content\\target");
 

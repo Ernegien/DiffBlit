@@ -41,11 +41,11 @@ namespace DiffBlit.Core.Config
 
                     for (int i = 0; i < iterations; i++)
                     {
-                        string path = $"{fileId}_{i}{fileExtension}";
+                        string path = Path.Combine(outputDirectory, $"{fileId}_{i}{fileExtension}");
 
                         using (var file = File.OpenWrite(path))
                         {
-                            fs.CopyTo(file, chunkSize);
+                            fs.CopyTo(file, chunkSize); // TODO: this extension is busted, doesn't honor size
                         }
                         var hash = Utility.ComputeHash(path);
                         content.Add(new FileInformation(path, hash));
@@ -53,7 +53,7 @@ namespace DiffBlit.Core.Config
 
                     if (remainder > 0)
                     {
-                        string path = $"{fileId}_{iterations}{fileExtension}";
+                        string path = Path.Combine(outputDirectory, $"{fileId}_{iterations}{fileExtension}");
 
                         using (var last = File.OpenWrite(path))
                         {
