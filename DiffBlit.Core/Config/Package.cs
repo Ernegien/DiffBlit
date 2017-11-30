@@ -72,8 +72,8 @@ namespace DiffBlit.Core.Config
         /// Generates package content differentials between the source and target snapshots in the specified output path.
         /// </summary>
         /// <param name="repo">The initial repository configuration.</param>
-        /// <param name="sourcePath">The source content path.</param>
-        /// <param name="targetPath">The target content path.</param>
+        /// <param name="sourcePath">The absolute local source content path.</param>
+        /// <param name="targetPath">The absolute localtarget content path.</param>
         /// <param name="deltaPath">The delta content path; these files should be uploaded to the repo.</param>
         /// <param name="deltaExtension">The delta content file extension.</param>
         /// <returns>The created package information.</returns>
@@ -162,7 +162,7 @@ namespace DiffBlit.Core.Config
                         try
                         {
                             // generate delta patch
-                            new XDeltaPatcher().Create(Path.Combine(Environment.CurrentDirectory, sourcePath, file.Path), Path.Combine(Environment.CurrentDirectory, targetPath, file.Path), tempDeltaFile);
+                            new XDeltaPatcher().Create(Path.Combine(sourcePath, file.Path), Path.Combine(targetPath, file.Path), tempDeltaFile);
                             var content = Content.Create(tempDeltaFile, packagePath, chunkSize: 16);    // TODO: small chunk size for testing part logic, remove
                             package.Actions.Add(new PatchAction(file.Path, file.Path, PatchAlgorithmType.XDelta, content));
                         }
@@ -177,7 +177,7 @@ namespace DiffBlit.Core.Config
                     // TODO: search for added files (path and hash that exists in target but not source)
                     if (!sourcePathMatch && !sourceHashMatch)    // TODO: fix
                     {
-                        var content = Content.Create(Path.Combine(Environment.CurrentDirectory, targetPath, file.Path), packagePath, compress: true, chunkSize: 16);    // TODO: small chunk size for testing part logic, remove
+                        var content = Content.Create(Path.Combine(targetPath, file.Path), packagePath, compress: true, chunkSize: 16);    // TODO: small chunk size for testing part logic, remove
                         package.Actions.Add(new AddAction(file.Path, content));
 
                         continue;

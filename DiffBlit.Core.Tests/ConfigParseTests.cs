@@ -36,10 +36,15 @@ namespace DiffBlit.Core.Tests
 
             try
             {
-                var repo = Repository.Deserialize(File.ReadAllText("content\\repo.json"));
+                var repo = new Repository();
+                repo.Name = "Test Repo Name";
+                repo.Description = "Test Repo Description";
+
+                string sourceContentPath = Path.Combine(Environment.CurrentDirectory, "content\\source");
+                string targetContentPath = Path.Combine(Environment.CurrentDirectory, "content\\target");
 
                 // generate package, get associated snapshots
-                var package = Package.Create(repo, "content\\source", "content\\target", tempDirectory);
+                var package = Package.Create(repo, sourceContentPath, targetContentPath, tempDirectory);
                 var sourceSnapshot = repo.Snapshots.Select(s => s.Id == package.SourceSnapshotId);
                 var targetSnapshot = repo.Snapshots.Select(s => s.Id == package.TargetSnapshotId);
                 repo.Packages.Add(package);
