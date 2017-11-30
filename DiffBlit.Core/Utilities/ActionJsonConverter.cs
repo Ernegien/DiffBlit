@@ -11,22 +11,30 @@ namespace DiffBlit.Core.Utilities
         /// <summary>
         /// Supported action types with their names and associated default implementations.
         /// </summary>
-        private readonly Dictionary<string, IAction> _actions = new Dictionary<string, IAction>
+        private readonly Dictionary<ActionType, IAction> _actions = new Dictionary<ActionType, IAction>
         {
-            ["add"] = new AddAction(),
-            ["remove"] = new RemoveAction(),
-            ["move"] = new MoveAction(),
-            ["patch"] = new PatchAction()
+            [ActionType.Add] = new AddAction(),
+            [ActionType.Remove] = new RemoveAction(),
+            [ActionType.Move] = new MoveAction(),
+            [ActionType.Copy] = new CopyAction(),
+            [ActionType.Patch] = new PatchAction()
             // TODO: prepend, insert, append, replace, regex, command, etc.
         };
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             var json = JObject.Load(reader);
-            IAction action = _actions[json["Type"].Value<string>().ToLowerInvariant()]; // TODO: invalid action type exception
+
+            if (!Enum.TryParse(json["Type"].Value<string>(), true, out ActionType actionType))
+            {
+                throw new NotSupportedException("Invalid action type.");
+            }
+
+            IAction action = _actions[actionType];
             serializer.Populate(json.CreateReader(), action);
             return action;
         }
+
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             throw new NotSupportedException();

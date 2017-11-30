@@ -7,13 +7,13 @@ namespace DiffBlit.Core.Config
     /// TODO: description
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
-    public class MoveAction : IAction
+    public class CopyAction : IAction
     {
         /// <summary>
         /// The type name used to aid in json deserialization.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        private const ActionType Type = ActionType.Move;
+        private const ActionType Type = ActionType.Copy;
 
         /// <summary>
         /// TODO: description
@@ -30,15 +30,15 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public MoveAction()
+        public CopyAction()
         {
-            
+
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        public MoveAction(string sourcePath, string targetPath)
+        public CopyAction(string sourcePath, string targetPath)
         {
             SourcePath = sourcePath;
             TargetPath = targetPath;
@@ -49,7 +49,7 @@ namespace DiffBlit.Core.Config
         /// </summary>
         public void Run()
         {
-            File.Move(SourcePath, TargetPath);
+            File.Copy(SourcePath, TargetPath);
         }
     }
 }

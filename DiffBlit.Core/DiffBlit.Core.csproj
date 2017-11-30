@@ -70,17 +70,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\ActionType.cs" />
     <Compile Include="Config\AddAction.cs" />
     <Compile Include="Config\Content.cs" />
+    <Compile Include="Config\CopyAction.cs" />
     <Compile Include="Config\KeyVault.cs" />
     <Compile Include="Config\MoveAction.cs" />
     <Compile Include="Config\Package.cs" />
     <Compile Include="Config\IAction.cs" />
+    <Compile Include="Config\PatchAlgorithmType.cs" />
     <Compile Include="Config\RemoveAction.cs" />
     <Compile Include="Logging\ILogger.cs" />
     <Compile Include="Logging\LoggerBase.cs" />
     <Compile Include="Logging\LogLevel.cs" />
-    <Compile Include="Logging\SeriLogger.cs" />
+    <Compile Include="Logging\Logger.cs" />
     <Compile Include="Config\PatchAction.cs" />
     <Compile Include="Config\Repository.cs" />
     <Compile Include="Extensions\ArrayExtensions.cs" />
@@ -103,6 +106,7 @@
     <Compile Include="Utilities\GZipWebClient.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Utilities\Utility.cs" />
     <Compile Include="Utilities\VersionJsonConverter.cs" />
   </ItemGroup>
   <ItemGroup>

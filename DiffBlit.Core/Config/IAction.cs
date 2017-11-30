@@ -13,6 +13,6 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        void Run();
+        void Run(); // TODO: sourceDirectory, targetDirectory?
     }
 }

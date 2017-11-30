@@ -34,5 +34,15 @@ namespace DiffBlit.Core.Extensions
         {
             return StructuralComparisons.StructuralEqualityComparer.Equals(sourceData, data);
         }
+
+        /// <summary>
+        /// Converts the data to a base64 string representation.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string ToBase64(this byte[] data)
+        {
+            return Convert.ToBase64String(data);
+        }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net;
 using DiffBlit.Core.Utilities;
 
 namespace DiffBlit.Core.IO

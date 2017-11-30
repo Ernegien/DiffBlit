@@ -9,8 +9,13 @@ namespace DiffBlit.Core.Utilities
         /// <inheritdoc />
         protected override WebRequest GetWebRequest(Uri address)
         {
-            HttpWebRequest request = (HttpWebRequest)base.GetWebRequest(address);
-            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            WebRequest request = base.GetWebRequest(address);
+
+            if (request is HttpWebRequest req)
+            {
+                req.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            }
+
             return request;
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -9,7 +10,7 @@ namespace DiffBlit.Core.Logging
     /// <summary>
     /// Serilog structured event logger.
     /// </summary>
-    public sealed class SeriLogger : LoggerBase
+    public sealed class Logger : LoggerBase
     {
         /// <summary>
         /// Allows the switching of log event levels without creating a new logger.
@@ -42,16 +43,22 @@ namespace DiffBlit.Core.Logging
             }
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private Logger _instance;
+
+        public Logger Instance => _instance ?? (_instance = new Logger());
+
         /// <summary>
         /// Creates a Serilog file.
         /// </summary>
         /// <param name="level">The minimum log level.</param>
         /// <param name="path">The log file path.</param>
-        public SeriLogger(LogLevel level = LogLevel.Info, string path = null)
+        public Logger(LogLevel level = LogLevel.Info, string path = null)
         {
             IsEnabled = true;
             Level = level;
             Path = path ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "{Date}.log");
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path));
 
             Serilog.Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(_levelSwitch)

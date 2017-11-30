@@ -24,6 +24,22 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
+        public RemoveAction()
+        {
+            
+        }
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        public RemoveAction(string targetPath)
+        {
+            TargetPath = targetPath;
+        }
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
         public void Run()
         {
             File.Delete(TargetPath);

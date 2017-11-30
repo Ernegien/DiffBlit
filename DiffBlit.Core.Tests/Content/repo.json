@@ -39,10 +39,10 @@
       },
       "Actions": [
         {
-          "Type": "patch",
+          "Type": "Patch",
           "SourcePath": "originalfile.txt",
           "TargetPath": "patchedfile.txt",
-          "Algorithm": "bsdiff",
+          "Algorithm": "XDelta",
           "Content": [
             {
               "Path": "fileXPart0.jar",
@@ -55,7 +55,7 @@
           ]
         },
         {
-          "Type": "add",
+          "Type": "Add",
           "TargetPath": "filetobecreated.txt",
           "Content": [
             {
@@ -65,11 +65,11 @@
           ]
         },
         {
-          "Type": "remove",
+          "Type": "Remove",
           "TargetPath": "filetobedeleted.txt"
         },
         {
-          "Type": "move",
+          "Type": "Move",
           "SourcePath": "oldpath/oldfile.txt",
           "TargetPath": "newpath/newfile.txt"
         }
