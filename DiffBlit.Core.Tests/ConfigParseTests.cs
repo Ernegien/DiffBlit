@@ -47,6 +47,9 @@ namespace DiffBlit.Core.Tests
                 var package = Package.Create(repo, sourceContentPath, targetContentPath, tempDirectory);
                 var sourceSnapshot = repo.Snapshots.Select(s => s.Id == package.SourceSnapshotId);
                 var targetSnapshot = repo.Snapshots.Select(s => s.Id == package.TargetSnapshotId);
+                
+                // TODO: update snapshot info here
+
                 repo.Packages.Add(package);
 
                 string json = repo.Serialize();
@@ -65,7 +68,8 @@ namespace DiffBlit.Core.Tests
             }
             finally
             {
-                Directory.Delete(tempDirectory, true);
+                // TODO: proper recursive file/directory deletion
+                //Directory.Delete(tempDirectory, true);
             }
         }
 

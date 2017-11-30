@@ -30,7 +30,7 @@ namespace DiffBlit.Core.Extensions
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <param name="count"></param>
-        public static void CopyTo(this Stream source, Stream destination, long count)
+        public static void CopyToCount(this Stream source, Stream destination, long count)
         {
             long bytesCopied = 0;
             byte[] buffer = new byte[0x1000];

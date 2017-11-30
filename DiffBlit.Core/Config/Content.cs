@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
 
 namespace DiffBlit.Core.Config
@@ -45,7 +46,7 @@ namespace DiffBlit.Core.Config
 
                         using (var file = File.OpenWrite(path))
                         {
-                            fs.CopyTo(file, chunkSize); // TODO: this extension is busted, doesn't honor size
+                            fs.CopyToCount(file, chunkSize);
                         }
                         var hash = Utility.ComputeHash(path);
                         content.Add(new FileInformation(path, hash));
@@ -57,7 +58,7 @@ namespace DiffBlit.Core.Config
 
                         using (var last = File.OpenWrite(path))
                         {
-                            fs.CopyTo(last, remainder);
+                            fs.CopyToCount(last, remainder);
                         }
                         var hash = Utility.ComputeHash(path);
                         content.Add(new FileInformation(path, hash));
