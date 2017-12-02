@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
@@ -47,9 +48,21 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public void Run()
+        /// <param name="context"></param>
+        public void Run(ActionContext context)
         {
-            File.Copy(SourcePath, TargetPath);
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            if (context.SourceBasePath == null)
+                throw new NullReferenceException("Source base path must be specified.");
+
+            if (context.TargetBasePath == null)
+                throw new NullReferenceException("Target base path must be specified.");
+
+            string targetPath = Path.Combine(context.TargetBasePath, TargetPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
+            File.Copy(Path.Combine(context.SourceBasePath, SourcePath), targetPath);
         }
     }
 }

@@ -3,6 +3,9 @@ using Newtonsoft.Json.Converters;
 
 namespace DiffBlit.Core.Config
 {
+    /// <summary>
+    /// TODO: description
+    /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
     public enum PatchAlgorithmType
     {

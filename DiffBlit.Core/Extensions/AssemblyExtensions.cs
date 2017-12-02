@@ -5,6 +5,13 @@ namespace DiffBlit.Core.Extensions
 {
     public static class AssemblyExtensions
     {
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <param name="outputDir"></param>
+        /// <param name="resourceLocation"></param>
+        /// <param name="file"></param>
         public static void ExtractEmbeddedResource(this Assembly assembly, string outputDir, string resourceLocation, string file)
         {
             using (Stream stream = assembly.GetManifestResourceStream(resourceLocation + @"." + file))
@@ -18,6 +25,13 @@ namespace DiffBlit.Core.Extensions
             }
         }
 
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <param name="outputDir"></param>
+        /// <param name="resourcePath"></param>
+        /// <returns></returns>
         public static Stream GetEmbeddedResourceStream(this Assembly assembly, string outputDir, string resourcePath)
         {
             return assembly.GetManifestResourceStream(resourcePath);

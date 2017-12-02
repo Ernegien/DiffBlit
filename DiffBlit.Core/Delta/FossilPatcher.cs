@@ -4,8 +4,17 @@ using Ionic.BZip2;
 
 namespace DiffBlit.Core.Delta
 {
+    /// <summary>
+    /// TODO: description
+    /// </summary>
     public class FossilPatcher : IPatcher
     {
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="targetPath"></param>
+        /// <param name="deltaPath"></param>
         public void Create(string sourcePath, string targetPath, string deltaPath)
         {
             using (FileStream patch = File.Open(deltaPath, FileMode.Create, FileAccess.Write))
@@ -16,6 +25,12 @@ namespace DiffBlit.Core.Delta
             }
         }
 
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="deltaPath"></param>
+        /// <param name="targetPath"></param>
         public void Apply(string sourcePath, string deltaPath, string targetPath)
         {
             using (BZip2InputStream patch = new BZip2InputStream(File.OpenRead(deltaPath)))

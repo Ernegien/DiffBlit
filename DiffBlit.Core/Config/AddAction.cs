@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
@@ -47,9 +48,10 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public void Run()
+        /// <param name="context"></param>
+        public void Run(ActionContext context)
         {
-            throw new NotImplementedException();
+            Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), Path.Combine(context.TargetBasePath, TargetPath));
         }
     }
 }

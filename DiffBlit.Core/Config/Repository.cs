@@ -52,12 +52,20 @@ namespace DiffBlit.Core.Config
         [JsonProperty(Required = Required.Always)]
         public IList<Package> Packages { get; } = new List<Package>();
 
-        // TODO: datetimes in utc
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
         public static Repository Deserialize(string json)
         {
             return JsonConvert.DeserializeObject<Repository>(json);
         }
 
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <returns></returns>
         public string Serialize()
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);

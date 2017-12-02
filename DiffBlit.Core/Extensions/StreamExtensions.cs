@@ -6,7 +6,7 @@ namespace DiffBlit.Core.Extensions
     public static class StreamExtensions
     {
         /// <summary>
-        /// 
+        /// TODO: description
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>

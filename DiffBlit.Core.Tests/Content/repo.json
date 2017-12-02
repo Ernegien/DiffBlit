@@ -18,7 +18,7 @@
       "Attributes": {
         "GitRevision": "1234567"
       },
-      "Content": [
+      "Files": [
         {
           "Path": "path/file.ext",
           "Hash": "Ec2KOA6NX9OsR8H4gDkDQdQLEUheiulG2Po9Rm8j/ok="
@@ -43,7 +43,7 @@
           "SourcePath": "originalfile.txt",
           "TargetPath": "patchedfile.txt",
           "Algorithm": "XDelta",
-          "Content": [
+          "Parts": [
             {
               "Path": "fileXPart0.jar",
               "Hash": "4wJEVi2pJK/GCzH3zwfd0tGdTyxcloTUxsLJaHB6zsI="
@@ -57,7 +57,7 @@
         {
           "Type": "Add",
           "TargetPath": "filetobecreated.txt",
-          "Content": [
+          "Parts": [
             {
               "Path": "fileYPart0.jar",
               "Hash": "DglZvW20H+IlU8HWnBPbiC+CXGdw+0Hbr+WL9af0Pbo="

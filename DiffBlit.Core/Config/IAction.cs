@@ -4,15 +4,16 @@ using Newtonsoft.Json;
 namespace DiffBlit.Core.Config
 {
     /// <summary>
-    /// TODO: description
+    /// Describes a runnable action.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     [JsonConverter(typeof(ActionJsonConverter))]
     public interface IAction
     {
         /// <summary>
-        /// TODO: description
+        /// Runs the action under the specified context.
         /// </summary>
-        void Run(); // TODO: sourceDirectory, targetDirectory?
+        /// <param name="context">The action context.</param>
+        void Run(ActionContext context);
     }
 }

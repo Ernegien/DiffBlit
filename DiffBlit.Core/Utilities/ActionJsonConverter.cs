@@ -21,6 +21,7 @@ namespace DiffBlit.Core.Utilities
             // TODO: prepend, insert, append, replace, regex, command, etc.
         };
 
+        /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             var json = JObject.Load(reader);
@@ -35,6 +36,7 @@ namespace DiffBlit.Core.Utilities
             return action;
         }
 
+        /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             throw new NotSupportedException();
@@ -58,8 +60,13 @@ namespace DiffBlit.Core.Utilities
             //jo.WriteTo(writer);
         }
 
+        /// <inheritdoc />
         public override bool CanWrite => false;
+
+        /// <inheritdoc />
         public override bool CanRead => true;
+
+        /// <inheritdoc />
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(IAction);

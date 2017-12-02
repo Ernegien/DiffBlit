@@ -28,7 +28,7 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -39,7 +39,7 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.AllowNull)]
+        [JsonProperty(Required = Required.Default)]
         [JsonConverter(typeof(VersionJsonConverter))]
         public Version Version { get; set; }
 
@@ -53,7 +53,7 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public Content Content { get; } = new Content();
+        public List<FileInformation> Files { get; } = new List<FileInformation>();
 
         /// <summary>
         /// Generates a snapshot using the specified path information.
@@ -68,30 +68,33 @@ namespace DiffBlit.Core.Config
             {
                 var hash = Utility.ComputeHash(file);
                 var relativePath = file.Substring(path.Length + 1); // file path relative to the base content path specified
-                snapshot.Content.Add(new FileInformation(relativePath, hash));
+                snapshot.Files.Add(new FileInformation(relativePath, hash));
             }
 
             return snapshot;
         }
 
+        /// <inheritdoc />
         public bool Equals(Snapshot other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Equals(Content, other.Content);
+            return Equals(Files, other.Files);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((Snapshot) obj);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
-            return (Content != null ? Content.GetHashCode() : 0);
+            return Files != null ? Files.GetHashCode() : 0;
         }
     }
 }

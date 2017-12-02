@@ -70,6 +70,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\ActionContext.cs" />
     <Compile Include="Config\ActionType.cs" />
     <Compile Include="Config\AddAction.cs" />
     <Compile Include="Config\Content.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="Config\MoveAction.cs" />
     <Compile Include="Config\Package.cs" />
     <Compile Include="Config\IAction.cs" />
+    <Compile Include="Config\PackageSettings.cs" />
     <Compile Include="Config\PatchAlgorithmType.cs" />
     <Compile Include="Config\RemoveAction.cs" />
     <Compile Include="Logging\ILogger.cs" />

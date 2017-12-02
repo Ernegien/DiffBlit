@@ -3,8 +3,17 @@ using Octodiff.Core;
 
 namespace DiffBlit.Core.Delta
 {
+    /// <summary>
+    /// TODO: description
+    /// </summary>
     public class OctodiffPatcher : IPatcher
     {
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="targetPath"></param>
+        /// <param name="deltaPath"></param>
         public void Create(string sourcePath, string targetPath, string deltaPath)
         {
             using (Stream orig = File.OpenRead(sourcePath))
@@ -21,6 +30,12 @@ namespace DiffBlit.Core.Delta
             }
         }
 
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="deltaPath"></param>
+        /// <param name="targetPath"></param>
         public void Apply(string sourcePath, string deltaPath, string targetPath)
         {
             using (var output = File.Open(targetPath, FileMode.Create, FileAccess.ReadWrite))

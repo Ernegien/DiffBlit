@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
@@ -32,6 +33,7 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
+        /// <param name="targetPath"></param>
         public RemoveAction(string targetPath)
         {
             TargetPath = targetPath;
@@ -40,9 +42,16 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public void Run()
+        /// <param name="context"></param>
+        public void Run(ActionContext context)
         {
-            File.Delete(TargetPath);
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+
+            if (context.TargetBasePath == null)
+                throw new NullReferenceException("Target base path must be specified.");
+
+            File.Delete(Path.Combine(context.TargetBasePath, TargetPath));
         }
     }
 }

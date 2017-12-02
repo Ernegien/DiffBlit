@@ -4,19 +4,40 @@ using System.IO;
 using System.Linq;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
+using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
 {
-    public class Content : List<FileInformation>, IEquatable<Content>
+    [JsonObject(MemberSerialization.OptOut)]
+    public class Content : IEquatable<Content>
     {
-        // cacheable in CloudFlare's free tier
-        public const int DefaultChunkSize = 1024 * 1024 * 512;
-        public const string DefaultChunkExtension = ".jar";
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        [JsonProperty(Required = Required.Always)]
+        public Guid Id { get; set; } = Guid.NewGuid();
 
-        public static Content Create(string inputFile, string outputDirectory, int chunkSize = DefaultChunkSize, bool compress = false, string fileExtension = DefaultChunkExtension)
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Compressed { get; set; } = true;
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        [JsonProperty(Required = Required.Always)]
+        public List<FileInformation> Parts { get; } = new List<FileInformation>();
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="inputFile"></param>
+        /// <param name="outputDirectory"></param>
+        /// <param name="settings"></param>
+        /// <returns></returns>
+        public static Content Create(string inputFile, string outputDirectory, PackageSettings settings)
         {
-            Guid fileId = Guid.NewGuid();
-
             if (!File.Exists(inputFile))
                 throw new FileNotFoundException("Unable to create content.", inputFile);
             
@@ -24,55 +45,46 @@ namespace DiffBlit.Core.Config
                 throw new DirectoryNotFoundException("Unable to create content.");
 
             Content content = new Content();
+            content.Compressed = settings.CompressionEnabled;
+            string contentDirectory = Path.Combine(outputDirectory, content.Id.ToString());
+            Directory.CreateDirectory(contentDirectory);
 
             try
             {
-                if (compress)
+                if (settings.CompressionEnabled)
                 {
                     string origPath = inputFile;
                     inputFile = Path.GetTempFileName();
                     Utility.Compress(origPath, inputFile);
                 }
 
-                using (FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                // break the file up into parts of specified chunk size
+                using (FileStream fs = File.OpenRead(inputFile))
                 {
-                    long size = fs.Length;
-                    int iterations = (int)(size / chunkSize);
-                    int remainder = (int)(size % chunkSize);
+                    long bytesCopied = 0;
+                    int fileIndex = 0;
 
-                    for (int i = 0; i < iterations; i++)
+                    do
                     {
-                        string path = Path.Combine(outputDirectory, $"{fileId}_{i}{fileExtension}");
+                        string fileName = $"{fileIndex}{settings.PartExtension}";
+                        string path = Path.Combine(contentDirectory, fileName);
+                        long bytesToCopy = Math.Min(fs.Length - bytesCopied, settings.PartSize);
 
                         using (var file = File.OpenWrite(path))
                         {
-                            fs.CopyToCount(file, chunkSize);
+                            fs.CopyToCount(file, bytesToCopy);
                         }
-                        var hash = Utility.ComputeHash(path);
-                        content.Add(new FileInformation(path, hash));
-                    }
 
-                    if (remainder > 0)
-                    {
-                        string path = Path.Combine(outputDirectory, $"{fileId}_{iterations}{fileExtension}");
+                        content.Parts.Add(new FileInformation(fileName, Utility.ComputeHash(path)));
+                        bytesCopied += bytesToCopy;
+                        fileIndex++;
 
-                        using (var last = File.OpenWrite(path))
-                        {
-                            fs.CopyToCount(last, remainder);
-                        }
-                        var hash = Utility.ComputeHash(path);
-                        content.Add(new FileInformation(path, hash));
-                    }
+                    } while (bytesCopied < fs.Length); 
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                throw;
             }
             finally
             {
-                if (compress)
+                if (settings.CompressionEnabled)
                 {
                     File.Delete(inputFile);
                 }
@@ -88,17 +100,24 @@ namespace DiffBlit.Core.Config
         /// <param name="outputFilePath">The path of the file to be created.</param>
         public void Save(string sourceDirectory, string outputFilePath)
         {
-            switch (Count)
+            // TODO: handle decompression
+            if (Compressed)
+                throw new NotImplementedException();
+
+            // make sure output directory exists
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
+
+            switch (Parts.Count)
             {
                 case 0:
                     throw new InvalidOperationException();
                 case 1:
-                    File.Copy(Path.Combine(sourceDirectory, this.First().Path), outputFilePath);
+                    File.Copy(Path.Combine(sourceDirectory, Parts.First().Path), outputFilePath);
                     break;
                 default:
                     using (FileStream fs = File.OpenWrite(outputFilePath))
                     {
-                        foreach (var file in this)
+                        foreach (var file in Parts)
                         {
                             using (FileStream s = File.OpenRead(Path.Combine(sourceDirectory, file.Path)))
                             {
@@ -110,36 +129,27 @@ namespace DiffBlit.Core.Config
             }
         }
 
+        /// <inheritdoc/>
         public bool Equals(Content other)
         {
-            if (Count != other?.Count)
+            if (Parts.Count != other?.Parts.Count)
                 return false;
 
-            for (int i = 0; i < Count; i++)
-            {
-                if (!this[i].Equals(other[i]))
-                    return false;
-            }
-
-            return true;
+            return !Parts.Where((t, i) => !t.Equals(other.Parts[i])).Any();
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((Content) obj);
+            return obj.GetType() == GetType() && Equals((Content) obj);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
-            int hash = 0;
-            foreach (var item in this)
-            {
-                hash ^= item.GetHashCode();
-            }
-            return hash;
+            return Parts.Aggregate(0, (current, item) => current ^ item.GetHashCode());
         }
     }
 }

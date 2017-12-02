@@ -3,7 +3,9 @@ using System.Net;
 
 namespace DiffBlit.Core.Utilities
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// A WebClient extension that automatically handles gzipped content.
+    /// </summary>
     public class GZipWebClient : WebClient
     {
         /// <inheritdoc />
