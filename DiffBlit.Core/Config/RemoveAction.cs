@@ -14,13 +14,13 @@ namespace DiffBlit.Core.Config
         /// The type name used to aid in json deserialization.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        private const string Type = "remove";
+        private const ActionType Type = ActionType.Remove;
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string TargetPath { get; set; }
+        public FilePath TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -48,10 +48,18 @@ namespace DiffBlit.Core.Config
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (context.TargetBasePath == null)
-                throw new NullReferenceException("Target base path must be specified.");
+            if (context.BasePath == null)
+                throw new NullReferenceException("The base path must be specified.");
 
-            File.Delete(Path.Combine(context.TargetBasePath, TargetPath));
+            string path = Path.Combine(context.BasePath, TargetPath);
+            if (TargetPath.IsDirectory)
+            {
+                Directory.Delete(path);
+            }
+            else
+            {
+                File.Delete(path);
+            }
         }
     }
 }

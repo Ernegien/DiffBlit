@@ -52,10 +52,11 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigParseTests.cs" />
+    <Compile Include="PackageTests.cs" />
     <Compile Include="FileReadTests.cs" />
     <Compile Include="PatcherTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="FileInfoTests.cs" />
     <Compile Include="UtilityTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -73,11 +74,10 @@
       <Name>DiffBlit.Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <Content Include="Content\Source\1\Empty1.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Folder Include="Content\Source\4\" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Content\Source\2\Duplicate.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -111,7 +111,7 @@
     <Content Include="Content\Target\2\Changed.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Content\Target\Empty2.txt">
+    <Content Include="Content\Target\Empty.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\Target\New.txt">

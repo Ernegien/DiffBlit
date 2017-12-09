@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
@@ -44,13 +45,13 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public IList<Snapshot> Snapshots { get; } = new List<Snapshot>();
+        public List<Snapshot> Snapshots { get; } = new List<Snapshot>();
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public IList<Package> Packages { get; } = new List<Package>();
+        public List<Package> Packages { get; } = new List<Package>();
 
         /// <summary>
         /// TODO: description
@@ -69,6 +70,17 @@ namespace DiffBlit.Core.Config
         public string Serialize()
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);
+        }
+        
+        /// <summary>
+        /// Returns the matching snapshot contained in the directory, otherwise null.
+        /// </summary>
+        /// <param name="directory"></param>
+        /// <returns></returns>
+        public Snapshot FindSnapshotFromDirectory(FilePath directory)
+        {
+            // searches snapshots by file count in descending order to find the most specific match possible
+            return Snapshots.OrderByDescending(s => s.Files.Count).FirstOrDefault(snapshot => new Snapshot(directory).Contains(snapshot));
         }
     }
 }

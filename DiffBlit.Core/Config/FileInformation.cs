@@ -10,28 +10,24 @@ namespace DiffBlit.Core.Config
     [JsonObject(MemberSerialization.OptOut)]
     public class FileInformation : IEquatable<FileInformation>
     {
+        // TODO: validate during set
+        /// <summary>
+        /// An absolute or relative path to a file or directory. Directories MUST end with a trailing slash to differentiate from extensionless files.
+        /// </summary>
+        [JsonProperty(Required = Required.Always)]
+        public FilePath Path { get; }
+
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public string Path { get; set; }
+        [JsonProperty(Required = Required.Default)]
+        public byte[] Hash { get; }
 
-        /// <summary>
-        /// TODO: description
-        /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public byte[] Hash { get; set; }
+        // TODO: DateTime if we wish to track that as part of file/folder differentials (ChangeDateAction)
 
-        // TODO: DateTime if we wish to track that
-
-        //[JsonIgnore]
-        //public string Name => IsDirectory ? System.IO.Path.GetDirectoryName(Path) : System.IO.Path.GetFileName(Path);
-
+        // TODO: would be useful during validation, quick check that sizes match before scanning further
         //[JsonProperty(Required = Required.Always)]
         //public long Size => new FileInfo(Path).Length;
-
-        //[JsonIgnore]
-        //public bool IsDirectory => Path.EndsWith("/") || Path.EndsWith("\\");
 
         /// <summary>
         /// TODO: description
@@ -46,9 +42,9 @@ namespace DiffBlit.Core.Config
         /// </summary>
         /// <param name="path"></param>
         /// <param name="hash"></param>
-        public FileInformation(string path, byte[] hash)
+        public FileInformation(FilePath path, byte[] hash = null)
         {
-            Path = path;
+            Path = path ?? throw new ArgumentNullException(nameof(path));
             Hash = hash;
         }
 
@@ -58,9 +54,11 @@ namespace DiffBlit.Core.Config
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            return Path == other.Path && 
+            return Path.Path == other.Path.Path && 
                 StructuralComparisons.StructuralEqualityComparer.Equals(Hash, other.Hash);
         }
+
+        #region Equality
 
         /// <inheritdoc />
         public override bool Equals(object obj)
@@ -75,7 +73,7 @@ namespace DiffBlit.Core.Config
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return Path.GetHashCode() ^ Hash.GetHashCode();
+            return Path.GetHashCode() ^ (Hash == null ? 0 : Hash.GetHashCode());
         }
 
         /// <inheritdoc />
@@ -83,5 +81,7 @@ namespace DiffBlit.Core.Config
         {
             return Path;
         }
+
+        #endregion
     }
 }

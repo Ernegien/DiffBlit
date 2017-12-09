@@ -36,22 +36,20 @@ namespace DiffBlit.Core.Config
         /// <param name="outputDirectory"></param>
         /// <param name="settings"></param>
         /// <returns></returns>
-        public static Content Create(string inputFile, string outputDirectory, PackageSettings settings)
+        public static Content Create(FilePath inputFile, FilePath outputDirectory, PackageSettings settings = null)
         {
             if (!File.Exists(inputFile))
                 throw new FileNotFoundException("Unable to create content.", inputFile);
-            
-            if (!Directory.Exists(outputDirectory))
-                throw new DirectoryNotFoundException("Unable to create content.");
 
             Content content = new Content();
-            content.Compressed = settings.CompressionEnabled;
+            PackageSettings pkgSettings = settings ?? new PackageSettings();
+            content.Compressed = pkgSettings.CompressionEnabled;
             string contentDirectory = Path.Combine(outputDirectory, content.Id.ToString());
             Directory.CreateDirectory(contentDirectory);
 
             try
             {
-                if (settings.CompressionEnabled)
+                if (pkgSettings.CompressionEnabled)
                 {
                     string origPath = inputFile;
                     inputFile = Path.GetTempFileName();
@@ -66,9 +64,9 @@ namespace DiffBlit.Core.Config
 
                     do
                     {
-                        string fileName = $"{fileIndex}{settings.PartExtension}";
+                        string fileName = $"{fileIndex}{pkgSettings.PartExtension}";
                         string path = Path.Combine(contentDirectory, fileName);
-                        long bytesToCopy = Math.Min(fs.Length - bytesCopied, settings.PartSize);
+                        long bytesToCopy = Math.Min(fs.Length - bytesCopied, pkgSettings.PartSize);
 
                         using (var file = File.OpenWrite(path))
                         {
@@ -84,7 +82,7 @@ namespace DiffBlit.Core.Config
             }
             finally
             {
-                if (settings.CompressionEnabled)
+                if (pkgSettings.CompressionEnabled)
                 {
                     File.Delete(inputFile);
                 }
@@ -98,34 +96,38 @@ namespace DiffBlit.Core.Config
         /// </summary>
         /// <param name="sourceDirectory">The directory which contains the content file(s).</param>
         /// <param name="outputFilePath">The path of the file to be created.</param>
-        public void Save(string sourceDirectory, string outputFilePath)
+        public void Save(FilePath sourceDirectory, FilePath outputFilePath)
         {
-            // TODO: handle decompression
-            if (Compressed)
-                throw new NotImplementedException();
+            if (!Directory.Exists(sourceDirectory))
+                throw new DirectoryNotFoundException("Invalid source directory.");
+
+            if (string.IsNullOrWhiteSpace(outputFilePath))
+                throw new ArgumentException(nameof(outputFilePath));                   
+
+            if (Parts.Count == 0)
+                throw new InvalidOperationException();
 
             // make sure output directory exists
             Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
 
-            switch (Parts.Count)
+            if (Compressed)
             {
-                case 0:
-                    throw new InvalidOperationException();
-                case 1:
-                    File.Copy(Path.Combine(sourceDirectory, Parts.First().Path), outputFilePath);
-                    break;
-                default:
-                    using (FileStream fs = File.OpenWrite(outputFilePath))
-                    {
-                        foreach (var file in Parts)
-                        {
-                            using (FileStream s = File.OpenRead(Path.Combine(sourceDirectory, file.Path)))
-                            {
-                                s.CopyTo(fs);
-                            }
-                        }
-                    }
-                    break;
+                var compressedFile = Utility.GetTempFilePath();
+
+                try
+                {
+                    // must assemble compressed file first, can't decompress against individual parts
+                    Utility.JoinFiles(sourceDirectory, compressedFile);
+                    Utility.Decompress(compressedFile, outputFilePath);
+                }
+                finally
+                {
+                    File.Delete(compressedFile);
+                }
+            }
+            else
+            {
+                Utility.JoinFiles(sourceDirectory, outputFilePath);
             }
         }
 

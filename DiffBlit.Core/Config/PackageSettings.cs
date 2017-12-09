@@ -6,12 +6,12 @@
     public class PackageSettings
     {
         /// <summary>
-        /// TODO: description
+        /// The maximum cacheable file size supported by Cloudflare's free tier.
         /// </summary>
         public const int DefaultContentPartSize = 1024 * 1024 * 512;
 
         /// <summary>
-        /// TODO: description
+        /// An archive file extension supported by Cloudflare's free tier.
         /// </summary>
         public const string DefaultContentPartExtension = ".jar";
 

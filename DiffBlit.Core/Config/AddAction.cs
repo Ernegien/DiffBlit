@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
@@ -20,12 +19,12 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string TargetPath { get; set; }
+        public FilePath TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.Always)]
+        [JsonProperty(Required = Required.Default)]
         public Content Content { get; } = new Content();
 
         /// <summary>
@@ -39,7 +38,7 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public AddAction(string targetPath, Content content)
+        public AddAction(FilePath targetPath, Content content)
         {
             TargetPath = targetPath;
             Content = content;
@@ -51,7 +50,16 @@ namespace DiffBlit.Core.Config
         /// <param name="context"></param>
         public void Run(ActionContext context)
         {
-            Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), Path.Combine(context.TargetBasePath, TargetPath));
+            FilePath path = Path.Combine(context.BasePath, TargetPath);
+            if (path.IsDirectory)
+            {
+                Directory.CreateDirectory(path);
+            }
+            else if (Content != null)
+            {
+                Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), path);
+            }
+            else File.Create(path).Dispose();
         }
     }
 }

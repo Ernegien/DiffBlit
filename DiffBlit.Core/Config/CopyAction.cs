@@ -20,13 +20,13 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string SourcePath { get; set; }
+        public FilePath SourcePath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string TargetPath { get; set; }
+        public FilePath TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -39,7 +39,7 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public CopyAction(string sourcePath, string targetPath)
+        public CopyAction(FilePath sourcePath, FilePath targetPath)
         {
             SourcePath = sourcePath;
             TargetPath = targetPath;
@@ -54,15 +54,15 @@ namespace DiffBlit.Core.Config
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (context.SourceBasePath == null)
-                throw new NullReferenceException("Source base path must be specified.");
+            if (context.BasePath == null)
+                throw new NullReferenceException("The base path must be specified.");
 
-            if (context.TargetBasePath == null)
-                throw new NullReferenceException("Target base path must be specified.");
+            if (SourcePath.Equals(TargetPath))
+                throw new NotSupportedException("Are you sure about that?");
 
-            string targetPath = Path.Combine(context.TargetBasePath, TargetPath);
+            FilePath targetPath = Path.Combine(context.BasePath, TargetPath);
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
-            File.Copy(Path.Combine(context.SourceBasePath, SourcePath), targetPath);
+            File.Copy(Path.Combine(context.BasePath, SourcePath), targetPath);
         }
     }
 }

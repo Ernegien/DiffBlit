@@ -11,7 +11,7 @@ namespace DiffBlit.Core.Tests
         [TestMethod]
         public void HashTest()
         {
-            Assert.AreEqual(Utility.ComputeHash("content\\source\\1\\empty1.txt").ToBase64(),
+            Assert.AreEqual(Utility.ComputeHash("content\\target\\empty.txt").ToBase64(),
                 "N8eDuAsdRYuJ5xLC3+J3cFDv8K78n22L7t7neAfZrrLifRSBXPTwIpsdNsGGu18rXvVeYysQjMQen7lkw5tCpQ==");
 
             Assert.AreEqual(Utility.ComputeHash("content\\source\\2\\duplicate.txt").ToBase64(),

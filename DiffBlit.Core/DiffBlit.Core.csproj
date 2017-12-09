@@ -75,6 +75,7 @@
     <Compile Include="Config\AddAction.cs" />
     <Compile Include="Config\Content.cs" />
     <Compile Include="Config\CopyAction.cs" />
+    <Compile Include="Config\FilePath.cs" />
     <Compile Include="Config\KeyVault.cs" />
     <Compile Include="Config\MoveAction.cs" />
     <Compile Include="Config\Package.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="Utilities\GZipWebClient.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Utilities\ToStringJsonConverter.cs" />
     <Compile Include="Utilities\Utility.cs" />
     <Compile Include="Utilities\VersionJsonConverter.cs" />
   </ItemGroup>

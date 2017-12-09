@@ -22,13 +22,13 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string SourcePath { get; set; }
+        public FilePath SourcePath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public string TargetPath { get; set; }
+        public FilePath TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -57,7 +57,7 @@ namespace DiffBlit.Core.Config
         /// <param name="targetPath"></param>
         /// <param name="algorithm"></param>
         /// <param name="content"></param>
-        public PatchAction(string sourcePath, string targetPath, PatchAlgorithmType algorithm, Content content)
+        public PatchAction(FilePath sourcePath, FilePath targetPath, PatchAlgorithmType algorithm, Content content)
         {
             SourcePath = sourcePath;
             TargetPath = targetPath;
@@ -67,19 +67,15 @@ namespace DiffBlit.Core.Config
 
         public void Run(ActionContext context)
         {
-            //if (context == null)
-            //    throw new ArgumentNullException(nameof(context));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
-            // TODO: optional if SourcePath is absolute
-            if (context?.SourceBasePath == null)
-                throw new NullReferenceException("Source base path must be specified.");
-
-            // TODO: optional if TargetPath is absolute
-            if (context?.TargetBasePath == null)
-                throw new NullReferenceException("Target base path must be specified.");
+            // TODO: optional if SourcePath & TargetPath is absolute
+            if (context.BasePath == null)
+                throw new NullReferenceException("Base path must be specified.");
 
             // TODO: optional if Content paths are all absolute
-            if (context?.ContentBasePath == null)
+            if (context.ContentBasePath == null)
                 throw new NullReferenceException("Content base path must be specified.");
             
             if (SourcePath == null)
@@ -91,34 +87,9 @@ namespace DiffBlit.Core.Config
             if (Content == null)
                 throw new NullReferenceException("Content must be specified.");
 
-            IPatcher patcher;
-            switch (Algorithm)
-            {
-                case PatchAlgorithmType.BsDiff:
-                    patcher = new BsDiffPatcher();
-                    break;
-                case PatchAlgorithmType.Fossil:
-                    patcher = new FossilPatcher();
-                    break;
-                case PatchAlgorithmType.MsDelta:
-                    patcher = new MsDeltaPatcher();
-                    break;
-                case PatchAlgorithmType.Octodiff:
-                    patcher = new OctodiffPatcher();
-                    break;
-                case PatchAlgorithmType.PatchApi:
-                    patcher = new PatchApiPatcher();
-                    break;
-                case PatchAlgorithmType.XDelta:
-                    patcher = new XDeltaPatcher();
-                    break;
-                default:
-                    throw new NotSupportedException("Invalid patch algorithm.");
-            }
-
             // TODO: if absolute paths are specified, don't combine with context base info
-            string sourcePath = Path.Combine(context.SourceBasePath, SourcePath);
-            string targetPath = Path.Combine(context.TargetBasePath, TargetPath);
+            FilePath sourcePath = Path.Combine(context.BasePath, SourcePath);
+            FilePath targetPath = Path.Combine(context.BasePath, TargetPath);
 
             string tempPatchPath = Utility.GetTempFilePath();
             string tempTargetCopyPath = Utility.GetTempFilePath();
@@ -127,8 +98,10 @@ namespace DiffBlit.Core.Config
                 // write the patch file to a temp location
                 Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), tempPatchPath);
 
+                IPatcher patcher = Utility.GetPatcher(Algorithm);
+
                 // if source and target paths are the same, copy source to temp location to patch against
-                if (SourcePath.Equals(TargetPath, StringComparison.OrdinalIgnoreCase))
+                if (SourcePath.Equals(TargetPath))
                 {
                     File.Copy(sourcePath, tempTargetCopyPath);
                     patcher.Apply(tempTargetCopyPath, tempPatchPath, targetPath);
