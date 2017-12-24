@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Windows.Forms;
 using DiffBlit.Core.Config;
 using DiffBlit.Core.Delta;
 using DiffBlit.Core.Extensions;
 using ICSharpCode.SharpZipLib.BZip2;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace DiffBlit.Core.Utilities
 {
@@ -64,13 +66,17 @@ namespace DiffBlit.Core.Utilities
         /// <summary>
         /// Combines files from the specified source directory into the specified ouput file. Assumes alphabetical sort indicates assembly order.
         /// </summary>
-        /// <param name="sourceDirectory">The source directory containing parts of a file.</param>
+        /// <param name="sourcePath">The source path containing parts of a file.</param>
         /// <param name="outputFilePath">The combined file path.</param>
-        public static void JoinFiles(string sourceDirectory, string outputFilePath)
+        public static void JoinFiles(Config.Path sourcePath, Config.Path outputFilePath)
         {
+            if (!outputFilePath.Uri.IsFile)
+                throw new ArgumentException("Output path must be a file.");
+
+            // TODO: use ReadOnlyFile and refactor to use sourceBasePath
             using (FileStream fs = File.OpenWrite(outputFilePath))
             {
-                foreach (var file in Directory.GetFiles(sourceDirectory))
+                foreach (var file in Directory.GetFiles(sourcePath))
                 {
                     using (FileStream s = File.OpenRead(file))
                     {
@@ -103,7 +109,7 @@ namespace DiffBlit.Core.Utilities
         /// <returns></returns>
         public static string GetTempDirectory()
         {
-            string dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(dir);
             return dir;
         }
@@ -114,7 +120,7 @@ namespace DiffBlit.Core.Utilities
         /// <returns></returns>
         public static string GetTempFilePath()
         {
-            return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            return System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString());
         }
 
         /// <summary>
@@ -160,6 +166,50 @@ namespace DiffBlit.Core.Utilities
                     throw new NotSupportedException("Invalid patch algorithm.");
             }
             return patcher;
+        }
+
+        /// <summary>
+        /// Shows a proper folder browser dialog and returns the selected directory path.
+        /// </summary>
+        /// <param name="prompt"></param>
+        /// <returns></returns>
+        public static string ShowDirectoryPicker(string prompt)
+        {
+            using (CommonOpenFileDialog ofd = new CommonOpenFileDialog())
+            {
+                ofd.IsFolderPicker = true;
+                ofd.Title = prompt;
+                ofd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                if (ofd.ShowDialog() == CommonFileDialogResult.Ok)
+                {
+                    return ofd.FileName;
+                }
+            }
+            return null;
+        }
+
+
+        /// <summary>
+        /// Shows a proper folder browser dialog and returns the selected directory path.
+        /// </summary>
+        /// <param name="prompt"></param>
+        /// <param name="extensionFilter"></param>
+        /// <returns></returns>
+        public static string ShowFilePicker(string prompt, string extensionFilter = null)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Title = prompt;
+                ofd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                ofd.Filter = extensionFilter;
+
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    return ofd.FileName;
+                }
+            }
+            return null;
         }
     }
 }

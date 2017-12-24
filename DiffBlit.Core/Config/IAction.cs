@@ -1,5 +1,4 @@
-﻿using DiffBlit.Core.Utilities;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config
 {
@@ -7,14 +6,14 @@ namespace DiffBlit.Core.Config
     /// Describes a runnable action.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
-    [JsonConverter(typeof(ActionJsonConverter))]
+    //[JsonConverter(typeof(ActionJsonConverter))]
     public interface IAction
     {
         /// <summary>
         /// The target path to run the action against.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        FilePath TargetPath { get; set; }
+        Path TargetPath { get; set; }
 
         /// <summary>
         /// Runs the action under the specified context.

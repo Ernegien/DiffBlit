@@ -45,5 +45,43 @@ namespace DiffBlit.Core.IO
 
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="path"></param>
+        public void CopyLocal(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            //if (Path.Scheme == Uri.UriSchemeFile)
+            //{
+
+            // make sure the directory exists beforehand
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path) ?? throw new InvalidOperationException());
+
+
+                using (var input = Open())
+                using (var output = File.OpenWrite(path))
+                {
+                    input.CopyTo(output);
+                }
+            //}
+            //else File.Copy(Path.LocalPath, path);
+        }
+
+        /// <summary>
+        /// Reads all of the file contexts as text.
+        /// </summary>
+        /// <returns></returns>
+        public string ReadAllText()
+        {
+            using (ReadOnlyStream s = Open())
+            using (StreamReader sr = new StreamReader(s))
+            {
+                return sr.ReadToEnd();
+            }
+        }
     }
 }

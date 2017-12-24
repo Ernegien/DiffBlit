@@ -13,22 +13,16 @@ namespace DiffBlit.Core.Config
     public class PatchAction : IAction
     {
         /// <summary>
-        /// The type name used to aid in json deserialization.
+        /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        private const ActionType Type = ActionType.Patch;
+        public Path SourcePath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public FilePath SourcePath { get; set; }
-
-        /// <summary>
-        /// TODO: description
-        /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public FilePath TargetPath { get; set; }
+        public Path TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -40,11 +34,12 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public Content Content { get; } = new Content();
+        public Content Content { get; private set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
+        [JsonConstructor]
         public PatchAction()
         {
             
@@ -57,7 +52,7 @@ namespace DiffBlit.Core.Config
         /// <param name="targetPath"></param>
         /// <param name="algorithm"></param>
         /// <param name="content"></param>
-        public PatchAction(FilePath sourcePath, FilePath targetPath, PatchAlgorithmType algorithm, Content content)
+        public PatchAction(Path sourcePath, Path targetPath, PatchAlgorithmType algorithm, Content content)
         {
             SourcePath = sourcePath;
             TargetPath = targetPath;
@@ -88,8 +83,8 @@ namespace DiffBlit.Core.Config
                 throw new NullReferenceException("Content must be specified.");
 
             // TODO: if absolute paths are specified, don't combine with context base info
-            FilePath sourcePath = Path.Combine(context.BasePath, SourcePath);
-            FilePath targetPath = Path.Combine(context.BasePath, TargetPath);
+            Path sourcePath = Path.Combine(context.BasePath, SourcePath);
+            Path targetPath = Path.Combine(context.BasePath, TargetPath);
 
             string tempPatchPath = Utility.GetTempFilePath();
             string tempTargetCopyPath = Utility.GetTempFilePath();

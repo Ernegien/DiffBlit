@@ -24,12 +24,12 @@ namespace DiffBlit.Core.Tests
         [TestMethod]
         public void WebFileReadTest()
         {
-            ReadOnlyFile webFile = new ReadOnlyFile("https://www.google.com/");
+            ReadOnlyFile webFile = new ReadOnlyFile("http://speedtest.tele2.net/1KB.zip");
             using (ReadOnlyStream s = webFile.Open())
             using (StreamReader sr = new StreamReader(s))
             {
-                string html = sr.ReadToEnd();
-                Assert.IsTrue(html.StartsWith("<!doctype html>"));
+                byte[] data = s.ReadAllBytes();
+                Assert.AreEqual(data.Length, 0x400);
                 Assert.IsFalse(s.CanWrite);
             }
         }

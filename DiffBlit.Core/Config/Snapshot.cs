@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
@@ -12,9 +13,15 @@ namespace DiffBlit.Core.Config
     /// <summary>
     /// TODO: description
     /// </summary>
-    [JsonObject(MemberSerialization.OptOut)]
+    [JsonObject(MemberSerialization.OptOut, IsReference = true)]
     public class Snapshot : IEquatable<Snapshot>
     {
+        ///// <summary>
+        ///// The parent repository the snapshot belongs to.
+        ///// </summary>
+        //[JsonProperty(Required = Required.Always)]
+        //public Repository Repository { get; private set; }
+
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -62,11 +69,11 @@ namespace DiffBlit.Core.Config
         /// Checks if the specified directory data matches the snapshot.
         /// </summary>
         /// <param name="directory"></param>
-        public void Validate(FilePath directory)
+        public void Validate(string directory)
         {
             foreach (var file in Files)
             {
-                FilePath path = Path.Combine(directory, file.Path);
+                Path path = Path.Combine(directory, file.Path);
 
                 if (file.Path.IsDirectory)
                 {
@@ -81,7 +88,8 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public Snapshot()
+        [JsonConstructor]
+        private Snapshot()
         {
             
         }
@@ -89,22 +97,33 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// Generates a snapshot using the specified path information.
         /// </summary>
-        /// <param name="path"></param>
-        public Snapshot(FilePath path)
+        /// <param name="repo"></param>
+        public Snapshot(string directoryPath)
         {
+            //Repository = repo ?? throw new ArgumentNullException(nameof(repo));
+
+            // normalize directory path without the trailing slash
+            directoryPath = directoryPath.TrimEnd('/', '\\');
+
             // add all files to the snapshot manifest
-            foreach (var file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+            // TODO: new ParallelOptions { MaxDegreeOfParallelism = 4 }
+            object locker = new object();
+            Parallel.ForEach(Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories), file =>
             {
                 var hash = Utility.ComputeHash(file);
-                var relativePath = file.Substring(path.Path.Length + 1); // file path relative to the base content path specified
-                Files.Add(new FileInformation(relativePath, hash));
-            }
+                var relativePath = file.Substring(directoryPath.Length + 1); // file path relative to the base content path specified
+
+                lock (locker)
+                {
+                    Files.Add(new FileInformation(relativePath, hash));
+                }
+            });
 
             // add all empty directories to the snapshot manifest
-            foreach (var directory in Utility.GetEmptyDirectories(path))
+            foreach (var directory in Utility.GetEmptyDirectories(directoryPath))
             {
                 // TODO: check path schema to determine whether to use forward or backwards slash?
-                var relativePath = directory.Substring(path.Path.Length + 1) + "\\"; // file path relative to the base content path specified, including trailing slash
+                var relativePath = directory.Substring(directoryPath.Length + 1) + "\\"; // file path relative to the base content path specified, including trailing slash
                 Files.Add(new FileInformation(relativePath));
             }
         }
@@ -116,12 +135,35 @@ namespace DiffBlit.Core.Config
         /// <returns></returns>
         public bool Contains(Snapshot other)
         {
-            HashSet<FilePath> otherSnapshots = new HashSet<FilePath>();
-            foreach (var file in other.Files)
-            {
-                otherSnapshots.Add(file.Path);
-            }
-            return Files.All(file => otherSnapshots.Contains(file.Path));
+            // TODO: look into why Contains fails, some bullshit equality issue most likely
+            //HashSet<FilePath> otherSnapshots = new HashSet<FilePath>();
+            //foreach (var file in other.Files)
+            //{
+            //    otherSnapshots.Add(file.Path);
+            //}
+            //return Files.All(file => otherSnapshots.Contains(file.Path));
+
+            return Files.All(file => other.Files.Contains(file));
+        }
+
+        /// <summary>
+        /// Attempts to locate files with the matching hash.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns>Returns the list of files found.</returns>
+        public List<FileInformation> FindFileFromHash(byte[] hash)
+        {
+            return Files.FindAll(file => file.Hash.IsEqual(hash));
+        }
+
+        /// <summary>
+        ///Attempts to locate a file with the matching path.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns>Returns the file or null if not found.</returns>
+        public FileInformation FindFileFromPath(string path)
+        {
+            return Files.FirstOrDefault(file => file.Path.Equals(path));
         }
 
         /// <inheritdoc />
@@ -129,7 +171,7 @@ namespace DiffBlit.Core.Config
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Equals(Files, other.Files);
+            return Files.SequenceEqual(other.Files);
         }
 
         /// <inheritdoc />
@@ -145,6 +187,12 @@ namespace DiffBlit.Core.Config
         public override int GetHashCode()
         {
             return Files != null ? Files.GetHashCode() : 0;
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

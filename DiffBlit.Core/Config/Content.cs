@@ -32,19 +32,26 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
+        [JsonConstructor]
+        private Content()
+        {
+            
+        }
+
+        /// <summary>
+        /// TODO: description
+        /// </summary>
         /// <param name="inputFile"></param>
         /// <param name="outputDirectory"></param>
         /// <param name="settings"></param>
-        /// <returns></returns>
-        public static Content Create(FilePath inputFile, FilePath outputDirectory, PackageSettings settings = null)
+        public Content(Path inputFile, Path outputDirectory, PackageSettings settings = null)
         {
             if (!File.Exists(inputFile))
                 throw new FileNotFoundException("Unable to create content.", inputFile);
 
-            Content content = new Content();
             PackageSettings pkgSettings = settings ?? new PackageSettings();
-            content.Compressed = pkgSettings.CompressionEnabled;
-            string contentDirectory = Path.Combine(outputDirectory, content.Id.ToString());
+            Compressed = pkgSettings.CompressionEnabled;
+            string contentDirectory = Path.Combine(outputDirectory, Id.ToString());
             Directory.CreateDirectory(contentDirectory);
 
             try
@@ -52,7 +59,7 @@ namespace DiffBlit.Core.Config
                 if (pkgSettings.CompressionEnabled)
                 {
                     string origPath = inputFile;
-                    inputFile = Path.GetTempFileName();
+                    inputFile = Utility.GetTempFilePath();
                     Utility.Compress(origPath, inputFile);
                 }
 
@@ -73,7 +80,7 @@ namespace DiffBlit.Core.Config
                             fs.CopyToCount(file, bytesToCopy);
                         }
 
-                        content.Parts.Add(new FileInformation(fileName, Utility.ComputeHash(path)));
+                        Parts.Add(new FileInformation(fileName, Utility.ComputeHash(path)));
                         bytesCopied += bytesToCopy;
                         fileIndex++;
 
@@ -87,8 +94,6 @@ namespace DiffBlit.Core.Config
                     File.Delete(inputFile);
                 }
             }
-
-            return content;
         }
 
         /// <summary>
@@ -96,7 +101,7 @@ namespace DiffBlit.Core.Config
         /// </summary>
         /// <param name="sourceDirectory">The directory which contains the content file(s).</param>
         /// <param name="outputFilePath">The path of the file to be created.</param>
-        public void Save(FilePath sourceDirectory, FilePath outputFilePath)
+        public void Save(Path sourceDirectory, Path outputFilePath)
         {
             if (!Directory.Exists(sourceDirectory))
                 throw new DirectoryNotFoundException("Invalid source directory.");

@@ -10,13 +10,14 @@ namespace DiffBlit.Core.Tests
     [TestClass]
     public class PackageTests
     {
+        // TODO: break this down into multiple tests
         [TestMethod]
         public void PackageCreateApplySerializeTest()
         {
             // create temp directories to be used during patching
-            FilePath tempDirectory = Utility.GetTempDirectory();
+            Config.Path tempDirectory = Utility.GetTempDirectory();
             Directory.CreateDirectory(tempDirectory);
-            FilePath tempSourceCopyDirectory = Utility.GetTempDirectory();
+            Config.Path tempSourceCopyDirectory = Utility.GetTempDirectory();
             Directory.CreateDirectory(tempSourceCopyDirectory);
 
             try
@@ -27,38 +28,38 @@ namespace DiffBlit.Core.Tests
                 repo.Description = "Test Repo Description";
 
                 // generate package content
-                FilePath sourceContentPath = Path.Combine(Environment.CurrentDirectory, "content\\source");
-                FilePath targetContentPath = Path.Combine(Environment.CurrentDirectory, "content\\target");
+                Config.Path sourceContentPath = System.IO.Path.Combine(Environment.CurrentDirectory, "content\\source");
+                Config.Path targetContentPath = System.IO.Path.Combine(Environment.CurrentDirectory, "content\\target");
                 var settings = new PackageSettings(partSize: 40); // test multipart logic
-                var package = Package.Create(repo, sourceContentPath, targetContentPath, tempDirectory, settings);
+                var package = new Package(repo, sourceContentPath, targetContentPath, tempDirectory, settings);
                 package.Name = "Initial Update";
 
                 // update the source snapshot info
-                var sourceSnapshot = repo.Snapshots.First(s => s.Id == package.SourceSnapshotId);
-                sourceSnapshot.Name = "Test Original Name";
-                sourceSnapshot.Version = new Version("1.0.0.0");
+                package.SourceSnapshot.Name = "Test Original Name";
+                package.SourceSnapshot.Version = new Version("1.0.0.0");
 
                 // update the target snapshot info
-                var targetSnapshot = repo.Snapshots.First(s => s.Id == package.TargetSnapshotId);
-                targetSnapshot.Name = "Test Updated Name";
-                targetSnapshot.Version = new Version("1.1.0.0");
+                package.TargetSnapshot.Name = "Test Updated Name";
+                package.TargetSnapshot.Version = new Version("1.1.0.0");
 
                 // bind the new package to the repo
                 repo.Packages.Add(package);
 
                 // test serialization
                 string json = repo.Serialize();
+                Repository testRepo = Repository.Deserialize(json);
+                string json2 = testRepo.Serialize();
+                Assert.AreEqual(json, json2);
 
                 // copy source directory to temp directory to patch against
                 new Microsoft.VisualBasic.Devices.Computer().FileSystem.CopyDirectory(sourceContentPath, tempSourceCopyDirectory, true);
 
                 // run the actions targeting the temp package directory
-                // TODO: need to figure out best way to embed hidden parent references into deserialized json objects, would be nice to not have to pass snapshots as args etc.
-                package.Apply(sourceSnapshot, targetSnapshot, Path.Combine(tempDirectory, package.Id.ToString()), tempSourceCopyDirectory);
+                package.Apply(System.IO.Path.Combine(tempDirectory, package.Id.ToString()), tempSourceCopyDirectory);
 
                 // find method tests (not comprehensive)
-                Assert.AreEqual(repo.FindSnapshotFromDirectory(sourceContentPath), sourceSnapshot);
-                Assert.AreEqual(repo.FindSnapshotFromDirectory(targetContentPath), targetSnapshot);
+                Assert.AreEqual(repo.FindSnapshotFromDirectory(sourceContentPath), package.SourceSnapshot);
+                Assert.AreEqual(repo.FindSnapshotFromDirectory(targetContentPath), package.TargetSnapshot);
             }
             finally
             {

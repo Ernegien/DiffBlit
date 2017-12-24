@@ -11,27 +11,22 @@ namespace DiffBlit.Core.Config
     public class MoveAction : IAction
     {
         /// <summary>
-        /// The type name used to aid in json deserialization.
+        /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        private const ActionType Type = ActionType.Move;
+        public Path SourcePath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public FilePath SourcePath { get; set; }
+        public Path TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public FilePath TargetPath { get; set; }
-
-        /// <summary>
-        /// TODO: description
-        /// </summary>
-        public MoveAction()
+        [JsonConstructor]
+        private MoveAction()
         {
             
         }
@@ -41,7 +36,7 @@ namespace DiffBlit.Core.Config
         /// </summary>
         /// <param name="sourcePath"></param>
         /// <param name="targetPath"></param>
-        public MoveAction(FilePath sourcePath, FilePath targetPath)
+        public MoveAction(Path sourcePath, Path targetPath)
         {
             SourcePath = sourcePath;
             TargetPath = targetPath;
@@ -62,7 +57,7 @@ namespace DiffBlit.Core.Config
             if (SourcePath.Equals(TargetPath))
                 throw new NotSupportedException("Are you sure about that?");
 
-            FilePath targetPath = Path.Combine(context.BasePath, TargetPath);
+            Path targetPath = Path.Combine(context.BasePath, TargetPath);
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
             File.Move(Path.Combine(context.BasePath, SourcePath), targetPath);
         }

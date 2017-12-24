@@ -10,27 +10,22 @@ namespace DiffBlit.Core.Config
     public class AddAction : IAction
     {
         /// <summary>
-        /// The type name used to aid in json deserialization.
-        /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        private const ActionType Type = ActionType.Add;
-
-        /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public FilePath TargetPath { get; set; }
+        public Path TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Default)]
-        public Content Content { get; } = new Content();
+        public Content Content { get; private set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        public AddAction()
+        [JsonConstructor]
+        private AddAction()
         {
             
         }
@@ -38,7 +33,7 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        public AddAction(FilePath targetPath, Content content)
+        public AddAction(Path targetPath, Content content)
         {
             TargetPath = targetPath;
             Content = content;
@@ -50,7 +45,7 @@ namespace DiffBlit.Core.Config
         /// <param name="context"></param>
         public void Run(ActionContext context)
         {
-            FilePath path = Path.Combine(context.BasePath, TargetPath);
+            Path path = Path.Combine(context.BasePath, TargetPath);
             if (path.IsDirectory)
             {
                 Directory.CreateDirectory(path);

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using DiffBlit.Core.Delta;
+using System.Linq;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 
@@ -14,6 +14,12 @@ namespace DiffBlit.Core.Config
     public class Package
     {
         /// <summary>
+        /// The parent repository the package belongs to.
+        /// </summary>
+        [JsonProperty(Required = Required.Always)]
+        public Repository Repository { get; private set; }
+
+        /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
@@ -23,19 +29,19 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public DateTime DateTime { get; } = DateTime.UtcNow;
+        public DateTime DateTime { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public Guid SourceSnapshotId { get; set; } = Guid.NewGuid();
+        public Snapshot SourceSnapshot { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        public Guid TargetSnapshotId { get; set; } = Guid.NewGuid();
+        public Snapshot TargetSnapshot { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -58,35 +64,33 @@ namespace DiffBlit.Core.Config
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.Always)]
+        [JsonProperty(Required = Required.Always, ItemTypeNameHandling = TypeNameHandling.Auto)]
         public List<IAction> Actions { get; } = new List<IAction>();
 
         /// <summary>
         /// Applies package actions in-order against the target directory using the contents of the package directory.
         /// </summary>
-        /// <param name="source">The source snapshot.</param>
-        /// <param name="target">The target snapshot.</param>
         /// <param name="packageDirectory">The package contents directory.</param>
         /// <param name="targetDirectory">The target base directory.</param>
-        public void Apply(Snapshot source, Snapshot target, FilePath packageDirectory, FilePath targetDirectory)
+        public void Apply(Path packageDirectory, Path targetDirectory)
         {
             // TODO: argument validation
 
             // validate source content
-            source.Validate(targetDirectory);
+            SourceSnapshot.Validate(targetDirectory);
 
             // create temporary directory to contain target backup in case of rollback
-            FilePath backupDirectory = Utility.GetTempDirectory();
+            Path backupDirectory = Utility.GetTempDirectory();
 
             try
             {
-                // backup content to be modified
-                foreach (var action in Actions)
+                // backup content to be modified, skipping NoAction types
+                foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
-                    FilePath targetPath = Path.Combine(targetDirectory, action.TargetPath);
+                    Path targetPath = Path.Combine(targetDirectory, action.TargetPath);
                     if (File.Exists(targetPath))
                     {
-                        FilePath backupPath = Path.Combine(backupDirectory, action.TargetPath);
+                        Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
                         Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
                         File.Copy(targetPath, backupPath, true);
                     }
@@ -99,15 +103,15 @@ namespace DiffBlit.Core.Config
                 }
 
                 // validate modified content
-                target.Validate(targetDirectory);
+                TargetSnapshot.Validate(targetDirectory);
             }
             catch
             {
                 // if failure is detected, delete any existing targets and restore any backups
-                foreach (var action in Actions)
+                foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
                     File.Delete(Path.Combine(targetDirectory, action.TargetPath));
-                    FilePath backupPath = Path.Combine(backupDirectory, action.TargetPath);
+                    Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
                     if (File.Exists(backupPath))
                         File.Copy(backupPath, Path.Combine(targetDirectory, action.TargetPath), true);
                 }
@@ -122,18 +126,26 @@ namespace DiffBlit.Core.Config
         }
 
         /// <summary>
+        /// TODO: description
+        /// </summary>
+        [JsonConstructor]
+        private Package()
+        {
+            
+        }
+
+        /// <summary>
         /// Generates package content differentials between the source and target snapshots in the specified output path.
         /// </summary>
         /// <param name="repo">The initial repository configuration.</param>
         /// <param name="sourcePath">The absolute local source content path.</param>
         /// <param name="targetPath">The absolute localtarget content path.</param>
         /// <param name="deltaPath">The delta content path; these files should be uploaded to the repo.</param>
-        /// <param name="settings">The package settings.</param>
+        /// <param name="settings">The optional package settings.</param>
         /// <returns>The created package information.</returns>
-        public static Package Create(Repository repo, FilePath sourcePath, FilePath targetPath, FilePath deltaPath, PackageSettings settings = null)
+        public Package(Repository repo, Path sourcePath, Path targetPath, Path deltaPath, PackageSettings settings = null)
         {
-            if (repo == null)
-                throw new ArgumentNullException(nameof(repo));
+            Repository = repo ?? throw new ArgumentNullException(nameof(repo));
 
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException("Source path does not exist.");
@@ -148,8 +160,7 @@ namespace DiffBlit.Core.Config
             PackageSettings pkgSettings = settings ?? new PackageSettings();
 
             // generate the empty package and create it's content directory based on its ID
-            Package package = new Package();
-            FilePath packagePath = Path.Combine(deltaPath, package.Id.ToString());
+            Path packagePath = Path.Combine(deltaPath, Id.ToString());
             Directory.CreateDirectory(packagePath);
 
             // TODO: automatic detection of relative versus absolute paths (absolute should override and not use base path if specified)
@@ -174,23 +185,29 @@ namespace DiffBlit.Core.Config
                 }
                 else repo.Snapshots.Add(targetSnapshot);
 
+                // abort if package already exists
+                if (repo.Packages.Any(pkg => Equals(pkg.SourceSnapshot, sourceSnapshot) && Equals(pkg.TargetSnapshot, targetSnapshot)))
+                {
+                    throw new NotSupportedException("Package already exists for the specified source and target content.");
+                }
+
                 // link snapshots to the package
-                package.SourceSnapshotId = sourceSnapshot.Id;
-                package.TargetSnapshotId = targetSnapshot.Id;
+                SourceSnapshot = sourceSnapshot;
+                TargetSnapshot = targetSnapshot;
 
                 #endregion
 
                 #region Lookup Tables
 
                 // generate lookup tables
-                var sourcePaths = new Dictionary<FilePath, FileInformation>();
-                var sourceFiles = new Dictionary<FilePath, List<FileInformation>>();
+                var sourcePaths = new Dictionary<Path, FileInformation>();
+                var sourceFiles = new Dictionary<Path, List<FileInformation>>();
                 var sourceHashes = new Dictionary<string, List<FileInformation>>();
                 foreach (var info in sourceSnapshot.Files)
                 {
                     sourcePaths[info.Path] = info;
 
-                    FilePath fileName = Path.GetFileName(info.Path);
+                    Path fileName = Path.GetFileName(info.Path);
                     if (!sourceFiles.ContainsKey(fileName))
                     {
                         sourceFiles[fileName] = new List<FileInformation>();
@@ -208,14 +225,14 @@ namespace DiffBlit.Core.Config
                     }
                 }
 
-                var targetPaths = new Dictionary<FilePath, FileInformation>();
-                var targetFiles = new Dictionary<FilePath, List<FileInformation>>();
+                var targetPaths = new Dictionary<Path, FileInformation>();
+                var targetFiles = new Dictionary<Path, List<FileInformation>>();
                 var targetHashes = new Dictionary<string, List<FileInformation>>();
                 foreach (var info in targetSnapshot.Files)
                 {
                     targetPaths[info.Path] = info;
 
-                    FilePath fileName = Path.GetFileName(info.Path);
+                    Path fileName = Path.GetFileName(info.Path);
                     if (!targetFiles.ContainsKey(fileName))
                     {
                         targetFiles[fileName] = new List<FileInformation>();
@@ -237,8 +254,8 @@ namespace DiffBlit.Core.Config
 
                 foreach (var file in targetSnapshot.Files)
                 {
-                    FilePath sourceFilePath = Path.Combine(sourcePath, file.Path);
-                    FilePath targetFilePath = Path.Combine(targetPath, file.Path);
+                    Path sourceFilePath = Path.Combine(sourcePath, file.Path);
+                    Path targetFilePath = Path.Combine(targetPath, file.Path);
                     bool sourcePathMatch = sourcePaths.ContainsKey(file.Path);
 
                     // unchanged empty directory
@@ -250,7 +267,7 @@ namespace DiffBlit.Core.Config
                     // added empty directory
                     if (file.Path.IsDirectory && !sourcePathMatch)
                     {
-                        package.Actions.Add(new AddAction(file.Path, null));
+                        Actions.Add(new AddAction(file.Path, null));
                         continue;
                     }
 
@@ -266,18 +283,22 @@ namespace DiffBlit.Core.Config
                     // changed files (same path, different hash)
                     if (sourcePathMatch && !sourceHashMatch)
                     {
-                        FilePath tempDeltaFile = Path.GetTempFileName();
+                        Path tempDeltaFile = Utility.GetTempFilePath();
+                        bool origCompressionSetting = pkgSettings.CompressionEnabled;
                         try
                         {
-                            // TODO: patches should already be compressed, create a temp copy of the package settings with compression disabled
+                            // patches should already be compressed, no need to do so again
+                            pkgSettings.CompressionEnabled = false;
+
                             // generate delta patch to temp location and generate content
                             Utility.GetPatcher(pkgSettings.PatchAlgorithmType).Create(sourceFilePath, targetFilePath, tempDeltaFile);
-                            var content = Content.Create(tempDeltaFile, packagePath, pkgSettings);
-                            package.Actions.Add(new PatchAction(file.Path, file.Path, pkgSettings.PatchAlgorithmType, content));
+                            var content = new Content(tempDeltaFile, packagePath, pkgSettings);
+                            Actions.Add(new PatchAction(file.Path, file.Path, pkgSettings.PatchAlgorithmType, content));
                         }
                         finally
                         {
                             File.Delete(tempDeltaFile);
+                            pkgSettings.CompressionEnabled = origCompressionSetting;
                         }
 
                         continue;
@@ -286,22 +307,22 @@ namespace DiffBlit.Core.Config
                     // moved files (different path, single hash match on both sides)
                     if (!sourcePathMatch && sourceHashSingleMatch && targetHashSingleMatch)
                     {
-                        package.Actions.Add(new MoveAction(sourceHashes[hash][0].Path, file.Path));
+                        Actions.Add(new MoveAction(sourceHashes[hash][0].Path, file.Path));
                         continue;
                     }
 
                     // search for copied files (multiple hash matches, different paths)
                     if (!sourcePathMatch && sourceHashMatch)
                     {
-                        package.Actions.Add(new CopyAction(sourceHashes[hash][0].Path, file.Path));
+                        Actions.Add(new CopyAction(sourceHashes[hash][0].Path, file.Path));
                         continue;
                     }
 
                     // search for added files (path and hash that exists in target but not source)
                     if (!sourcePathMatch && !sourceHashMatch)
                     {
-                        var content = Content.Create(targetFilePath, packagePath, pkgSettings);
-                        package.Actions.Add(new AddAction(file.Path, content));
+                        var content = new Content(targetFilePath, packagePath, pkgSettings);
+                        Actions.Add(new AddAction(file.Path, content));
                         continue;
                     }
 
@@ -313,7 +334,7 @@ namespace DiffBlit.Core.Config
                 {
                     if (!targetPaths.ContainsKey(file.Path))
                     {
-                        package.Actions.Add(new RemoveAction(file.Path));
+                        Actions.Add(new RemoveAction(file.Path));
                     }
                 }
 
@@ -327,8 +348,34 @@ namespace DiffBlit.Core.Config
             {
                 Directory.Delete(packagePath, true);
             }
- 
-            return package;
+        }
+
+        /// <summary>
+        /// Saves the package contents to the specified output directory.
+        /// </summary>
+        /// <param name="outputDirectory"></param>
+        public void Save(string outputDirectory)
+        {
+            // TODO: 
+            throw new NotImplementedException();
+
+            foreach (IAction file in Actions)
+            {
+                if (file is AddAction add)
+                {
+                   
+                }
+                else if (file is PatchAction patch)
+                {
+                    
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

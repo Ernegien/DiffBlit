@@ -11,20 +11,15 @@ namespace DiffBlit.Core.Config
     public class RemoveAction : IAction
     {
         /// <summary>
-        /// The type name used to aid in json deserialization.
+        /// TODO: description
         /// </summary>
         [JsonProperty(Required = Required.Always)]
-        private const ActionType Type = ActionType.Remove;
+        public Path TargetPath { get; set; }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public FilePath TargetPath { get; set; }
-
-        /// <summary>
-        /// TODO: description
-        /// </summary>
+        [JsonConstructor]
         public RemoveAction()
         {
             

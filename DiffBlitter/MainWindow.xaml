@@ -5,6 +5,35 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DiffBlitter"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-	<Grid/>
+        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" Loaded="Window_Loaded" ResizeMode="NoResize">
+	<Grid>
+		<DockPanel>
+			<Menu DockPanel.Dock="Top">
+				<MenuItem Header="_File">
+					<MenuItem Header="_Update" Click="MenuItem_Click"></MenuItem>
+					<MenuItem Header="_Exit" Click="MenuItem_Click"></MenuItem>
+				</MenuItem>
+				<MenuItem Header="_Tools">
+					<MenuItem Header="_Generate Repo Config" Click="MenuItem_Click"></MenuItem>
+					<MenuItem Header="_Create Package" Click="MenuItem_Click"></MenuItem>
+				</MenuItem>
+				<MenuItem Header="_About" Click="MenuItem_Click"></MenuItem>
+			</Menu>
+			<StatusBar DockPanel.Dock="Bottom" Height="28">
+				<Label Name="Status" Padding="0"></Label>
+			</StatusBar>
+			<StackPanel>
+				<UniformGrid Columns="2">
+					<GroupBox Header="Detected Version" Margin="10, 5, 5, 0">
+						<Label Name="DetectedVersion" VerticalAlignment="Center">Processing...</Label>
+					</GroupBox>
+					<GroupBox Header="Target Version" Margin="5, 5, 10, 0">
+						<ComboBox Name="TargetVersion" Margin="5" IsEnabled="False" IsReadOnly="True" SelectionChanged="TargetVersion_SelectionChanged"></ComboBox>
+					</GroupBox>
+				</UniformGrid>
+
+				<Button Name="Update" Margin="10" Height="40" IsEnabled="False" Click="Update_Click">Update</Button>
+			</StackPanel>
+		</DockPanel>
+	</Grid>
 </Window>
