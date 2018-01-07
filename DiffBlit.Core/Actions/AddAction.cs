@@ -1,7 +1,9 @@
 ﻿using System.IO;
+using DiffBlit.Core.Config;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// TODO: description
@@ -52,7 +54,7 @@ namespace DiffBlit.Core.Config
             }
             else if (Content != null)
             {
-                Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), path);
+                Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), path);
             }
             else File.Create(path).Dispose();
         }

@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DiffBlit.Core.Actions;
+using DiffBlit.Core.IO;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Config
 {
@@ -67,17 +70,21 @@ namespace DiffBlit.Core.Config
         [JsonProperty(Required = Required.Always, ItemTypeNameHandling = TypeNameHandling.Auto)]
         public List<IAction> Actions { get; } = new List<IAction>();
 
+        // TODO: progress indicator callback
         /// <summary>
         /// Applies package actions in-order against the target directory using the contents of the package directory.
         /// </summary>
         /// <param name="packageDirectory">The package contents directory.</param>
         /// <param name="targetDirectory">The target base directory.</param>
-        public void Apply(Path packageDirectory, Path targetDirectory)
+        /// <param name="validateBefore">Indicates whether or not the target directory should be validated before package application.</param>
+        /// <param name="validateAfter">Indicates whether or not the target directory should be validated after package application.</param>
+        public void Apply(Path packageDirectory, Path targetDirectory, bool validateBefore = true, bool validateAfter = true)
         {
-            // TODO: argument validation
-
             // validate source content
-            SourceSnapshot.Validate(targetDirectory);
+            if (validateBefore)
+            {
+                SourceSnapshot.Validate(targetDirectory);
+            }
 
             // create temporary directory to contain target backup in case of rollback
             Path backupDirectory = Utility.GetTempDirectory();
@@ -103,7 +110,10 @@ namespace DiffBlit.Core.Config
                 }
 
                 // validate modified content
-                TargetSnapshot.Validate(targetDirectory);
+                if (validateAfter)
+                {
+                    TargetSnapshot.Validate(targetDirectory);
+                }
             }
             catch
             {
@@ -134,6 +144,7 @@ namespace DiffBlit.Core.Config
             
         }
 
+        // TODO: progress indicator callback
         /// <summary>
         /// Generates package content differentials between the source and target snapshots in the specified output path.
         /// </summary>
@@ -160,7 +171,7 @@ namespace DiffBlit.Core.Config
             PackageSettings pkgSettings = settings ?? new PackageSettings();
 
             // generate the empty package and create it's content directory based on its ID
-            Path packagePath = Path.Combine(deltaPath, Id.ToString());
+            Path packagePath = Path.Combine(deltaPath, Id + "\\");
             Directory.CreateDirectory(packagePath);
 
             // TODO: automatic detection of relative versus absolute paths (absolute should override and not use base path if specified)
@@ -350,24 +361,34 @@ namespace DiffBlit.Core.Config
             }
         }
 
+        // TODO: progress indicator callback
         /// <summary>
-        /// Saves the package contents to the specified output directory.
+        /// Saves the package contents to the specified local directory.
         /// </summary>
-        /// <param name="outputDirectory"></param>
-        public void Save(string outputDirectory)
+        /// <param name="baseUri">The base URI where the package content exists.</param>
+        /// <param name="localDirectory">The local directory path to save the content to.</param>
+        public void Save(Path baseUri, Path localDirectory)
         {
-            // TODO: 
-            throw new NotImplementedException();
-
             foreach (IAction file in Actions)
             {
-                if (file is AddAction add)
+                Content content;
+                switch (file)
                 {
-                   
+                    case AddAction add:
+                        content = add.Content;
+                        break;
+                    case PatchAction patch:
+                        content = patch.Content;
+                        break;
+                    default:
+                        continue;
                 }
-                else if (file is PatchAction patch)
+ 
+                foreach (var part in content.Parts)
                 {
-                    
+                    Path repoPath = baseUri + (Id + "/") + (content.Id + "/") + part.Path;
+                    Path packagePath = localDirectory + (Id + "/") + (content.Id + "/") + part.Path;
+                    new ReadOnlyFile(repoPath).Copy(packagePath);
                 }
             }
         }

@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using DiffBlit.Core.Config;
+using DiffBlit.Core.IO;
+using Newtonsoft.Json;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// This action does nothing when ran.
@@ -17,7 +19,7 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonConstructor]
-        public NoAction()
+        private NoAction()
         {
             
         }

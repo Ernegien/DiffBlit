@@ -47,28 +47,26 @@ namespace DiffBlit.Core.IO
         }
 
         /// <summary>
-        /// TODO: description
+        /// Copies file contents to the specified local path.
         /// </summary>
-        /// <param name="path"></param>
-        public void CopyLocal(string path)
+        /// <param name="localPath"></param>
+        public void Copy(string localPath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            //if (Path.Scheme == Uri.UriSchemeFile)
-            //{
+            if (localPath == null)
+                throw new ArgumentNullException(nameof(localPath));
 
             // make sure the directory exists beforehand
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path) ?? throw new InvalidOperationException());
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(localPath) ?? throw new InvalidOperationException());
 
-
+            if (Path.Scheme != Uri.UriSchemeFile)
+            {
                 using (var input = Open())
-                using (var output = File.OpenWrite(path))
+                using (var output = File.OpenWrite(localPath))
                 {
                     input.CopyTo(output);
                 }
-            //}
-            //else File.Copy(Path.LocalPath, path);
+            }
+            else File.Copy(Path.LocalPath, localPath);
         }
 
         /// <summary>

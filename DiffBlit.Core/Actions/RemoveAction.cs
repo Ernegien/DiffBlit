@@ -1,21 +1,17 @@
 ﻿using System;
 using System.IO;
+using DiffBlit.Core.Config;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// TODO: description
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
-    public class CopyAction : IAction
+    public class RemoveAction : IAction
     {
-        /// <summary>
-        /// TODO: description
-        /// </summary>
-        [JsonProperty(Required = Required.Always)]
-        public Path SourcePath { get; set; }
-
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -26,17 +22,17 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonConstructor]
-        private CopyAction()
+        private RemoveAction()
         {
-
+            
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        public CopyAction(Path sourcePath, Path targetPath)
+        /// <param name="targetPath"></param>
+        public RemoveAction(string targetPath)
         {
-            SourcePath = sourcePath;
             TargetPath = targetPath;
         }
 
@@ -52,12 +48,15 @@ namespace DiffBlit.Core.Config
             if (context.BasePath == null)
                 throw new NullReferenceException("The base path must be specified.");
 
-            if (SourcePath.Equals(TargetPath))
-                throw new NotSupportedException("Are you sure about that?");
-
-            Path targetPath = Path.Combine(context.BasePath, TargetPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
-            File.Copy(Path.Combine(context.BasePath, SourcePath), targetPath);
+            string path = Path.Combine(context.BasePath, TargetPath);
+            if (TargetPath.IsDirectory)
+            {
+                Directory.Delete(path);
+            }
+            else
+            {
+                File.Delete(path);
+            }
         }
     }
 }

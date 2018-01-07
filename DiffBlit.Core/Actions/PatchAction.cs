@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using DiffBlit.Core.Config;
 using DiffBlit.Core.Delta;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// TODO: description
@@ -40,7 +42,7 @@ namespace DiffBlit.Core.Config
         /// TODO: description
         /// </summary>
         [JsonConstructor]
-        public PatchAction()
+        private PatchAction()
         {
             
         }
@@ -88,10 +90,11 @@ namespace DiffBlit.Core.Config
 
             string tempPatchPath = Utility.GetTempFilePath();
             string tempTargetCopyPath = Utility.GetTempFilePath();
+
             try
             {
                 // write the patch file to a temp location
-                Content.Save(Path.Combine(context.ContentBasePath, Content.Id.ToString()), tempPatchPath);
+                Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), tempPatchPath);
 
                 IPatcher patcher = Utility.GetPatcher(Algorithm);
 

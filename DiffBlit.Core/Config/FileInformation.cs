@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using DiffBlit.Core.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Config

@@ -5,6 +5,7 @@ using System.Linq;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Config
 {
@@ -51,7 +52,7 @@ namespace DiffBlit.Core.Config
 
             PackageSettings pkgSettings = settings ?? new PackageSettings();
             Compressed = pkgSettings.CompressionEnabled;
-            string contentDirectory = Path.Combine(outputDirectory, Id.ToString());
+            Path contentDirectory = Path.Combine(outputDirectory, Id + "\\");
             Directory.CreateDirectory(contentDirectory);
 
             try

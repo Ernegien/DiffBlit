@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,13 +8,14 @@ using System.Windows.Threading;
 using DiffBlit.Core.Config;
 using DiffBlit.Core.IO;
 using DiffBlit.Core.Utilities;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlitter
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private Repository _repo;
         private Snapshot _detectedSnapshot;
@@ -40,6 +40,9 @@ namespace DiffBlitter
                 case "_Exit":
                     Application.Current.Shutdown();
                     break;
+                case "_Update":
+                    UpdateCheck();
+                    break;
                 case "_Generate Repo Config":
                     GenerateRepoConfig();
                     break;
@@ -50,6 +53,12 @@ namespace DiffBlitter
                     Process.Start("https://github.com/Ernegien/DiffBlit/tree/master/DiffBlitter");
                     break;
             }
+        }
+
+        private void UpdateCheck()
+        {
+            // TODO: 
+            throw new NotImplementedException();
         }
 
         private void GenerateRepoConfig()
@@ -109,27 +118,74 @@ namespace DiffBlitter
         {
             // TODO: proper error handling and logging
 
-            return;
-
             // pull down the repo config
             string json = new ReadOnlyFile(Config.RepoUri).ReadAllText();
             _repo = Repository.Deserialize(json);
 
             // determine current version quickly via a targeted file check if possible
+            DetectVersion();
 
-            if (!string.IsNullOrWhiteSpace(Config.VersionFilePath))
+            UpdateTargetVersionComboBox();
+        }
+
+        private void TargetVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateButtonStatus();
+        }
+
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            var version = TargetVersion.SelectedValue as Version;
+            Snapshot targetSnapshot = null;
+
+            // find matching package
+            foreach (var package in _repo.Packages)
             {
-                var snapshots = _repo.FindSnapshotsFromFile(_contentPath, Config.VersionFilePath);
+                if (version == package.TargetSnapshot.Version && package.SourceSnapshot.Version == _detectedSnapshot.Version)
+                {
+                    targetSnapshot = package.TargetSnapshot;
+                    var packageDirectory = Utility.GetTempDirectory();
+                    
+                    try
+                    {
+                        // download package contents locally
+                        package.Save(Path.GetDirectoryName(Config.RepoUri), packageDirectory);
 
-                if (snapshots.Count == 1)
-                    _detectedSnapshot = snapshots.First();
+                        // apply package
+                        package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath, Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply);
+                    }
+                    finally
+                    {
+                        Directory.Delete(packageDirectory, true);
+                    }
+
+                    break;
+                }
             }
 
-            // otherwise fall back to full hash verification
-            if (_detectedSnapshot == null)
+            DetectVersion(targetSnapshot);
+            UpdateTargetVersionComboBox();
+        }
+
+        private void DetectVersion(Snapshot overrideSnapshot = null)
+        {
+            if (overrideSnapshot == null)
             {
-                _detectedSnapshot = _repo.FindSnapshotFromDirectory(_contentPath);
+                if (!string.IsNullOrWhiteSpace(Config.VersionFilePath))
+                {
+                    var snapshots = _repo.FindSnapshotsFromFile(_contentPath, Config.VersionFilePath);
+
+                    if (snapshots.Count == 1)
+                        _detectedSnapshot = snapshots.First();
+                }
+
+                // otherwise fall back to full hash verification
+                if (_detectedSnapshot == null)
+                {
+                    _detectedSnapshot = _repo.FindSnapshotFromDirectory(_contentPath);
+                }
             }
+            else _detectedSnapshot = overrideSnapshot;
 
             // update status
             DetectedVersion.Content = _detectedSnapshot?.ToString() ?? "Unknown";
@@ -138,7 +194,12 @@ namespace DiffBlitter
                 Status.Content = "Unable to detect content version.";
                 return;
             }
- 
+        }
+
+        private void UpdateTargetVersionComboBox()
+        {
+            TargetVersion.Items.Clear();
+
             // build the target combobox based on what packages are applicable to the detected source
             TargetVersion.Items.Add("Select One");
             foreach (var p in _repo.Packages)
@@ -153,33 +214,7 @@ namespace DiffBlitter
             TargetVersion.IsEnabled = true;
         }
 
-        private void TargetVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateTargetVersionsComboBox();
-        }
-
-        private void Update_Click(object sender, RoutedEventArgs e)
-        {
-            var version = TargetVersion.SelectedValue as Version;
-
-            // TODO: find matching package
-            foreach (var package in _repo.Packages)
-            {
-                if (version == package.TargetSnapshot.Version && package.SourceSnapshot.Version == _detectedSnapshot.Version)
-                {
-                    // download package contents locally
-                    var packageDirectory = Utility.GetTempDirectory();
-                    package.Save(packageDirectory); // TODO: specify base path
-
-                    // apply package
-                    package.Apply(packageDirectory, _contentPath);
-                }
-            }
-
-            UpdateTargetVersionsComboBox();
-        }
-
-        private void UpdateTargetVersionsComboBox()
+        private void UpdateButtonStatus()
         {
             var version = TargetVersion.SelectedValue as Version;
             Update.IsEnabled = version != null;

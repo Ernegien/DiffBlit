@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using DiffBlit.Core.Config;
 using DiffBlit.Core.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Tests
 {
@@ -15,9 +15,9 @@ namespace DiffBlit.Core.Tests
         public void PackageCreateApplySerializeTest()
         {
             // create temp directories to be used during patching
-            Config.Path tempDirectory = Utility.GetTempDirectory();
+            Path tempDirectory = Utility.GetTempDirectory();
             Directory.CreateDirectory(tempDirectory);
-            Config.Path tempSourceCopyDirectory = Utility.GetTempDirectory();
+            Path tempSourceCopyDirectory = Utility.GetTempDirectory();
             Directory.CreateDirectory(tempSourceCopyDirectory);
 
             try
@@ -28,8 +28,8 @@ namespace DiffBlit.Core.Tests
                 repo.Description = "Test Repo Description";
 
                 // generate package content
-                Config.Path sourceContentPath = System.IO.Path.Combine(Environment.CurrentDirectory, "content\\source");
-                Config.Path targetContentPath = System.IO.Path.Combine(Environment.CurrentDirectory, "content\\target");
+                Path sourceContentPath = Path.Combine(Environment.CurrentDirectory + "\\", "content\\source\\");
+                Path targetContentPath = Path.Combine(Environment.CurrentDirectory + "\\", "content\\target\\");
                 var settings = new PackageSettings(partSize: 40); // test multipart logic
                 var package = new Package(repo, sourceContentPath, targetContentPath, tempDirectory, settings);
                 package.Name = "Initial Update";
@@ -55,7 +55,7 @@ namespace DiffBlit.Core.Tests
                 new Microsoft.VisualBasic.Devices.Computer().FileSystem.CopyDirectory(sourceContentPath, tempSourceCopyDirectory, true);
 
                 // run the actions targeting the temp package directory
-                package.Apply(System.IO.Path.Combine(tempDirectory, package.Id.ToString()), tempSourceCopyDirectory);
+                package.Apply(Path.Combine(tempDirectory, package.Id + "\\"), tempSourceCopyDirectory);
 
                 // find method tests (not comprehensive)
                 Assert.AreEqual(repo.FindSnapshotFromDirectory(sourceContentPath), package.SourceSnapshot);

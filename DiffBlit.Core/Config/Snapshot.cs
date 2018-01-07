@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Config
 {
@@ -16,12 +17,6 @@ namespace DiffBlit.Core.Config
     [JsonObject(MemberSerialization.OptOut, IsReference = true)]
     public class Snapshot : IEquatable<Snapshot>
     {
-        ///// <summary>
-        ///// The parent repository the snapshot belongs to.
-        ///// </summary>
-        //[JsonProperty(Required = Required.Always)]
-        //public Repository Repository { get; private set; }
-
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -65,13 +60,14 @@ namespace DiffBlit.Core.Config
         [JsonProperty(Required = Required.Always)]
         public List<FileInformation> Files { get; } = new List<FileInformation>();
 
+        // TODO: progress indicator callback
         /// <summary>
         /// Checks if the specified directory data matches the snapshot.
         /// </summary>
         /// <param name="directory"></param>
         public void Validate(string directory)
         {
-            foreach (var file in Files)
+            Parallel.ForEach(Files, file =>
             {
                 Path path = Path.Combine(directory, file.Path);
 
@@ -82,7 +78,7 @@ namespace DiffBlit.Core.Config
                 }
                 else if (!Utility.ComputeHash(path).IsEqual(file.Hash))
                     throw new DataException($"File validation failed for {path}");
-            }
+            });
         }
 
         /// <summary>
@@ -94,6 +90,7 @@ namespace DiffBlit.Core.Config
             
         }
 
+        // TODO: progress indicator callback
         /// <summary>
         /// Generates a snapshot using the specified path information.
         /// </summary>
@@ -126,6 +123,9 @@ namespace DiffBlit.Core.Config
                 var relativePath = directory.Substring(directoryPath.Length + 1) + "\\"; // file path relative to the base content path specified, including trailing slash
                 Files.Add(new FileInformation(relativePath));
             }
+
+            // order files by path name
+            //Files = Files.OrderBy(p => p.Path.Name).ToList();
         }
 
         /// <summary>
@@ -135,14 +135,6 @@ namespace DiffBlit.Core.Config
         /// <returns></returns>
         public bool Contains(Snapshot other)
         {
-            // TODO: look into why Contains fails, some bullshit equality issue most likely
-            //HashSet<FilePath> otherSnapshots = new HashSet<FilePath>();
-            //foreach (var file in other.Files)
-            //{
-            //    otherSnapshots.Add(file.Path);
-            //}
-            //return Files.All(file => otherSnapshots.Contains(file.Path));
-
             return Files.All(file => other.Files.Contains(file));
         }
 
@@ -171,7 +163,7 @@ namespace DiffBlit.Core.Config
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Files.SequenceEqual(other.Files);
+            return Files.Count == other.Files.Count && Files.All(file => other.Files.Contains(file));
         }
 
         /// <inheritdoc />

@@ -1,4 +1,6 @@
-﻿namespace DiffBlit.Core.Config
+﻿using DiffBlit.Core.IO;
+
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// Context for IAction execution.

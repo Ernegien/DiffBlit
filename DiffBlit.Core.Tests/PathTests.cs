@@ -1,6 +1,5 @@
-﻿using DiffBlit.Core.Config;
-using DiffBlit.Core.Extensions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Tests
 {
@@ -200,6 +199,61 @@ namespace DiffBlit.Core.Tests
             Assert.AreEqual(new Path("test", true).GetHashCode(), "test".GetHashCode());
             Assert.AreNotEqual(new Path("test").GetHashCode(), "test".GetHashCode());
             Assert.AreNotEqual(new Path("TEST").GetHashCode(), "test".GetHashCode());
+        }
+
+        [TestMethod]
+        public void PathDirectoryNameTest()
+        {
+            Assert.IsNull(Path.GetDirectoryName(@"file"));
+            Assert.IsNull(Path.GetDirectoryName(@"file.ext"));
+            Assert.AreEqual(Path.GetDirectoryName(@"directory\"), new Path(@"directory\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"directory\file"), new Path(@"directory\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"directory\file.ext"), new Path(@"directory\"));
+
+            Assert.AreEqual(Path.GetDirectoryName(@"C:\file"), new Path(@"C:\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"C:\file.ext"), new Path(@"C:\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"C:\directory\"), new Path(@"C:\directory\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"C:\directory\file"), new Path(@"C:\directory\"));
+            Assert.AreEqual(Path.GetDirectoryName(@"C:\directory\file.ext"), new Path(@"C:\directory\"));
+
+            Assert.AreEqual(Path.GetDirectoryName(@"http://example.com/file"), new Path(@"http://example.com/"));
+            Assert.AreEqual(Path.GetDirectoryName(@"http://example.com/file.ext"), new Path(@"http://example.com/"));
+            Assert.AreEqual(Path.GetDirectoryName(@"http://example.com/directory/"), new Path(@"http://example.com/directory/"));
+            Assert.AreEqual(Path.GetDirectoryName(@"http://example.com/directory/file"), new Path(@"http://example.com/directory/"));
+            Assert.AreEqual(Path.GetDirectoryName(@"http://example.com/directory/file.ext"), new Path(@"http://example.com/directory/"));
+        }
+
+        [TestMethod]
+        public void PathFileNameTest()
+        {
+            Assert.AreEqual(Path.GetFileName(@"file"), new Path(@"file"));
+            Assert.AreEqual(Path.GetFileName(@"file.ext"), new Path(@"file.ext"));
+            Assert.IsNull(Path.GetFileName(@"directory\"));
+            Assert.AreEqual(Path.GetFileName(@"directory\file"), new Path(@"file"));
+            Assert.AreEqual(Path.GetFileName(@"directory\file.ext"), new Path(@"file.ext"));
+
+            Assert.AreEqual(Path.GetFileName(@"C:\file"), new Path(@"file"));
+            Assert.AreEqual(Path.GetFileName(@"C:\file.ext"), new Path(@"file.ext"));
+            Assert.IsNull(Path.GetFileName(@"C:\directory\"));
+            Assert.AreEqual(Path.GetFileName(@"C:\directory\file"), new Path(@"file"));
+            Assert.AreEqual(Path.GetFileName(@"C:\directory\file.ext"), new Path(@"file.ext"));
+
+            // TODO: convert the others to this format
+            Assert.AreEqual("file", Path.GetFileName(@"http://example.com/file").Name);
+            Assert.AreEqual("file.ext", Path.GetFileName(@"http://example.com/file.ext").Name);
+            Assert.IsNull(Path.GetFileName(@"http://example.com/directory/"));
+            Assert.AreEqual("file", Path.GetFileName(@"http://example.com/directory/file").Name);
+            Assert.AreEqual("file.ext", Path.GetFileName(@"http://example.com/directory/file.ext").Name);
+        }
+
+        [TestMethod]
+        public void PathCombineTest()
+        {
+            var test = Path.Combine("http://example.com/", "file");
+            Assert.AreEqual(Path.Combine("http://example.com/", "file"), new Path("http://example.com/file"));
+            Assert.AreEqual(Path.Combine("http://example.com/directory/", "file"), new Path("http://example.com/directory/file"));
+
+
         }
     }
 }

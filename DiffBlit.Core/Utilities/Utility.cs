@@ -9,6 +9,7 @@ using DiffBlit.Core.Delta;
 using DiffBlit.Core.Extensions;
 using ICSharpCode.SharpZipLib.BZip2;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Utilities
 {
@@ -68,7 +69,7 @@ namespace DiffBlit.Core.Utilities
         /// </summary>
         /// <param name="sourcePath">The source path containing parts of a file.</param>
         /// <param name="outputFilePath">The combined file path.</param>
-        public static void JoinFiles(Config.Path sourcePath, Config.Path outputFilePath)
+        public static void JoinFiles(Path sourcePath, Path outputFilePath)
         {
             if (!outputFilePath.Uri.IsFile)
                 throw new ArgumentException("Output path must be a file.");
@@ -109,7 +110,7 @@ namespace DiffBlit.Core.Utilities
         /// <returns></returns>
         public static string GetTempDirectory()
         {
-            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString());
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString()) + "\\";
             Directory.CreateDirectory(dir);
             return dir;
         }
@@ -188,7 +189,6 @@ namespace DiffBlit.Core.Utilities
             }
             return null;
         }
-
 
         /// <summary>
         /// Shows a proper folder browser dialog and returns the selected directory path.

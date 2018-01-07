@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using DiffBlit.Core.Config;
+using Newtonsoft.Json;
+using DiffBlit.Core.IO;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// Describes a runnable action.

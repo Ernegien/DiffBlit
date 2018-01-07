@@ -1,8 +1,7 @@
 ﻿using System;
-using DiffBlit.Core.IO;
 using Newtonsoft.Json;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.IO
 {
     [JsonObject(MemberSerialization.OptOut)]
     public class Path : IEquatable<Path>
@@ -41,7 +40,6 @@ namespace DiffBlit.Core.Config
             if (!Uri.TryCreate(name, UriKind.RelativeOrAbsolute, out Uri uri))
                 throw new NotSupportedException("Invalid path.");
 
-
             // TODO: tighten up what constitutes as valid; for now, don't be a dick
             if (uri.IsAbsoluteUri)
             {
@@ -59,7 +57,6 @@ namespace DiffBlit.Core.Config
             else
             {
                 // manual validation of relative paths
-
             }
 
             Uri = uri;
@@ -88,25 +85,10 @@ namespace DiffBlit.Core.Config
 
         #endregion
 
-        // TODO: Combine method
-
         public ReadOnlyStream OpenFile()
         {
             throw new NotImplementedException();
         }
-
-        //public List<ReadOnlyFile> GetFiles()
-        //{
-        //    if (Uri.Scheme == Uri.UriSchemeFile && IsDirectory)
-        //    {
-        //        List<ReadOnlyFile> files = new List<ReadOnlyFile>();
-
-
-
-        //        return files;
-        //    }
-        //    else throw new NotSupportedException("Current path must be a local directory.");
-        //}
 
         // TODO: assert the path specified is a file?
         public static Path FromLocalFile(string localFilePath)
@@ -125,6 +107,7 @@ namespace DiffBlit.Core.Config
         }
 
         // TODO: cleanup
+        // TODO: assume first is a directory and auto-append path separator?
         public static Path Combine(Path first, Path second)
         {
             if (first == null)
@@ -133,18 +116,22 @@ namespace DiffBlit.Core.Config
             if (second == null)
                 throw new ArgumentNullException(nameof(second));
 
-            if (!first.IsAbsolute)
-                throw new NotSupportedException("The first path must be absolute.");
+            if (!first.IsDirectory)
+                throw new NotSupportedException("The first path must be a directory.");
+
+            if (second.IsAbsolute)
+                throw new NotSupportedException("The second path must be relative.");
 
             if (first.Uri.Scheme == Uri.UriSchemeFile)
             {
                 return new Path(System.IO.Path.Combine(first, second), first.CaseSensitive);
             }
 
+            // TODO: cleanup
             if (first.Uri.Scheme == Uri.UriSchemeHttp || first.Uri.Scheme == Uri.UriSchemeHttps ||
                      first.Uri.Scheme == Uri.UriSchemeFtp)
             {
-                return new Path(new Uri(new Uri(first), second.ToString().TrimStart('/', '\\')).AbsolutePath, first.CaseSensitive);
+                return new Path(first.Name + second.Name.TrimStart('\\', '/'));
             }
 
             throw new NotSupportedException();
@@ -152,14 +139,58 @@ namespace DiffBlit.Core.Config
 
         public static Path GetDirectoryName(Path path)
         {
-            // TODO: handle other URI types
-            return System.IO.Path.GetDirectoryName(path);
+            int index = path.Name.LastIndexOfAny(new[] {'\\', '/'});
+
+            if (index != -1)
+                return path.Name.Substring(0, index + 1);
+
+            return null;
         }
 
         public static Path GetFileName(Path path)
         {
-            // TODO: handle other URI types
-            return System.IO.Path.GetFileName(path);
+            int index = path.Name.LastIndexOfAny(new[] { '\\', '/' });
+
+            if (index == -1)
+                return path.Name;
+
+            if (path.Name.Length > index + 1)
+                return path.Name.Substring(index + 1);
+
+            return null;
+        }
+
+        public static Path operator +(Path first, Path second)
+        {
+            if (first == null)
+                throw new ArgumentNullException(nameof(first));
+
+            if (second == null)
+                throw new ArgumentNullException(nameof(second));
+
+            return Combine(first, second);
+        }
+
+        public static Path operator +(string first, Path second)
+        {
+            if (first == null)
+                throw new ArgumentNullException(nameof(first));
+
+            if (second == null)
+                throw new ArgumentNullException(nameof(second));
+
+            return Combine(first, second);
+        }
+
+        public static Path operator +(Path first, string second)
+        {
+            if (first == null)
+                throw new ArgumentNullException(nameof(first));
+
+            if (second == null)
+                throw new ArgumentNullException(nameof(second));
+
+            return Combine(first, second);
         }
 
         #region Equality

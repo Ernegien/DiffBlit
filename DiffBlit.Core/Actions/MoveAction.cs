@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using DiffBlit.Core.Config;
 using Newtonsoft.Json;
+using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core.Actions
 {
     /// <summary>
     /// TODO: description
