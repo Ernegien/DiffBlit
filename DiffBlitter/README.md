@@ -6,4 +6,4 @@ DiffBlitter is only intended to be used as a basic demonstration of functionalit
 
 #### Credits
 
-Icon made by [Freepik](http://www.flaticon.com/authors/freepik) from [www.flaticon.com](www.flaticon.com)
+Icon made by [Freepik](http://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com)
