@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using DiffBlit.Core.Actions;
 using DiffBlit.Core.IO;
 using DiffBlit.Core.Utilities;
@@ -70,7 +75,6 @@ namespace DiffBlit.Core.Config
         [JsonProperty(Required = Required.Always, ItemTypeNameHandling = TypeNameHandling.Auto)]
         public List<IAction> Actions { get; } = new List<IAction>();
 
-        // TODO: progress indicator callback
         /// <summary>
         /// Applies package actions in-order against the target directory using the contents of the package directory.
         /// </summary>
@@ -78,19 +82,26 @@ namespace DiffBlit.Core.Config
         /// <param name="targetDirectory">The target base directory.</param>
         /// <param name="validateBefore">Indicates whether or not the target directory should be validated before package application.</param>
         /// <param name="validateAfter">Indicates whether or not the target directory should be validated after package application.</param>
-        public void Apply(Path packageDirectory, Path targetDirectory, bool validateBefore = true, bool validateAfter = true)
+        /// <param name="progressHandler">The optional handler to report progress to.</param>
+        /// <param name="progressStatus">The optional progress status description.</param>
+        public void Apply(Path packageDirectory, Path targetDirectory, bool validateBefore = true, bool validateAfter = true, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
             // validate source content
-            if (validateBefore)
+            if (validateBefore && !SourceSnapshot.Equals(new Snapshot(targetDirectory, progressHandler, "Validating source content")))
             {
-                SourceSnapshot.Validate(targetDirectory);
+                throw new DataException("Directory contents do not match the source snapshot.");
             }
 
             // create temporary directory to contain target backup in case of rollback
             Path backupDirectory = Utility.GetTempDirectory();
 
+            int processedCount = 0;
+
             try
             {
+                const string backupStepName = "Performing backup";
+                progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, backupStepName));
+
                 // backup content to be modified, skipping NoAction types
                 foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
@@ -101,22 +112,39 @@ namespace DiffBlit.Core.Config
                         Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
                         File.Copy(targetPath, backupPath, true);
                     }
+
+                    // propagate current progress upstream
+                    processedCount++;
+                    int progressPercentage = (int)(processedCount / (float)Actions.Count * 100);
+                    progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, backupStepName));
                 }
 
+                progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus));
+
                 // apply the actions in-order
+                processedCount = 0;
                 foreach (var action in Actions)
                 {
                     action.Run(new ActionContext(targetDirectory, packageDirectory));
+
+                    // propagate current progress upstream
+                    processedCount++;
+                    int progressPercentage = (int)(processedCount / (float)Actions.Count * 100);
+                    progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
                 }
 
                 // validate modified content
-                if (validateAfter)
+                if (validateAfter && !TargetSnapshot.Equals(new Snapshot(targetDirectory, progressHandler, "Validating output")))
                 {
-                    TargetSnapshot.Validate(targetDirectory);
+                    throw new DataException("Directory contents do not match the target snapshot.");
                 }
             }
             catch
             {
+                const string rollbackStepName = "Performing rollback";
+                progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, rollbackStepName));
+                processedCount = 0;
+
                 // if failure is detected, delete any existing targets and restore any backups
                 foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
@@ -124,6 +152,11 @@ namespace DiffBlit.Core.Config
                     Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
                     if (File.Exists(backupPath))
                         File.Copy(backupPath, Path.Combine(targetDirectory, action.TargetPath), true);
+
+                    // propagate current progress upstream
+                    processedCount++;
+                    int progressPercentage = (int)(processedCount / (float)Actions.Count * 100);
+                    progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, rollbackStepName));
                 }
 
                 // re-throw the original exception
@@ -153,8 +186,10 @@ namespace DiffBlit.Core.Config
         /// <param name="targetPath">The absolute localtarget content path.</param>
         /// <param name="deltaPath">The delta content path; these files should be uploaded to the repo.</param>
         /// <param name="settings">The optional package settings.</param>
+        /// <param name="progressHandler">The optional handler to report progress to.</param>
+        /// <param name="progressStatus">The optional progress status description.</param>
         /// <returns>The created package information.</returns>
-        public Package(Repository repo, Path sourcePath, Path targetPath, Path deltaPath, PackageSettings settings = null)
+        public Package(Repository repo, Path sourcePath, Path targetPath, Path deltaPath, PackageSettings settings = null, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
             Repository = repo ?? throw new ArgumentNullException(nameof(repo));
 
@@ -181,7 +216,7 @@ namespace DiffBlit.Core.Config
                 #region Snapshots
 
                 // generate source snapshot, use existing one in repo if content matches
-                var sourceSnapshot = new Snapshot(sourcePath);
+                var sourceSnapshot = new Snapshot(sourcePath, progressHandler, "Generating source snapshot");
                 if (repo.Snapshots.Contains(sourceSnapshot))
                 {
                     sourceSnapshot = repo.Snapshots[repo.Snapshots.IndexOf(sourceSnapshot)];
@@ -189,7 +224,7 @@ namespace DiffBlit.Core.Config
                 else repo.Snapshots.Add(sourceSnapshot);
 
                 // generate target snapshot, use existing one in repo if content matches
-                var targetSnapshot = new Snapshot(targetPath);
+                var targetSnapshot = new Snapshot(targetPath, progressHandler, "Generating target snapshot");
                 if (repo.Snapshots.Contains(targetSnapshot))
                 {
                     targetSnapshot = repo.Snapshots[repo.Snapshots.IndexOf(targetSnapshot)];
@@ -263,83 +298,110 @@ namespace DiffBlit.Core.Config
 
                 #endregion
 
-                foreach (var file in targetSnapshot.Files)
+                #region Package Content Generation
+
+                progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus));
+
+                // no good way to get regular progress callbacks from all patchers so just count files processed instead for now
+                int processedCount = 0;
+
+                Parallel.ForEach(targetSnapshot.Files, file =>
                 {
                     Path sourceFilePath = Path.Combine(sourcePath, file.Path);
                     Path targetFilePath = Path.Combine(targetPath, file.Path);
                     bool sourcePathMatch = sourcePaths.ContainsKey(file.Path);
 
+                    // only applicable for files
+                    string hash = !file.Path.IsDirectory ? BitConverter.ToString(file.Hash) : null;
+                    bool sourceHashMatch = !file.Path.IsDirectory ? sourceHashes.ContainsKey(hash) : false;
+                    bool sourceHashSingleMatch = !file.Path.IsDirectory && (sourceHashMatch && sourceHashes[hash].Count == 1);
+                    bool targetHashSingleMatch = !file.Path.IsDirectory ? targetHashes[hash].Count == 1 : false;
+
                     // unchanged empty directory
                     if (file.Path.IsDirectory & sourcePathMatch)
                     {
-                        continue;
+                     
                     }
 
                     // added empty directory
-                    if (file.Path.IsDirectory && !sourcePathMatch)
+                    else if (file.Path.IsDirectory && !sourcePathMatch)
                     {
-                        Actions.Add(new AddAction(file.Path, null));
-                        continue;
+                        lock (((ICollection)Actions).SyncRoot)
+                        {
+                            Actions.Add(new AddAction(file.Path, null));
+                        }
                     }
 
-                    string hash = BitConverter.ToString(file.Hash);
-                    bool sourceHashMatch = sourceHashes.ContainsKey(hash);
-                    bool sourceHashSingleMatch = sourceHashMatch && sourceHashes[hash].Count == 1;
-                    bool targetHashSingleMatch = targetHashes[hash].Count == 1;
-
                     // unchanged file
-                    if (sourcePathMatch && sourceHashMatch)
-                        continue;
+                    else if (!file.Path.IsDirectory && sourcePathMatch && sourceHashMatch)
+                    {
+                        // do nothing
+                    }
 
                     // changed files (same path, different hash)
-                    if (sourcePathMatch && !sourceHashMatch)
+                    else if (!file.Path.IsDirectory && sourcePathMatch && !sourceHashMatch)
                     {
                         Path tempDeltaFile = Utility.GetTempFilePath();
-                        bool origCompressionSetting = pkgSettings.CompressionEnabled;
+
                         try
                         {
                             // patches should already be compressed, no need to do so again
-                            pkgSettings.CompressionEnabled = false;
+                            PackageSettings pkgSettingsCopy = (PackageSettings)pkgSettings.Clone();   // deep clone for thread safety
+                            pkgSettingsCopy.CompressionEnabled = false;
 
                             // generate delta patch to temp location and generate content
-                            Utility.GetPatcher(pkgSettings.PatchAlgorithmType).Create(sourceFilePath, targetFilePath, tempDeltaFile);
-                            var content = new Content(tempDeltaFile, packagePath, pkgSettings);
-                            Actions.Add(new PatchAction(file.Path, file.Path, pkgSettings.PatchAlgorithmType, content));
+                            Utility.GetPatcher(pkgSettingsCopy.PatchAlgorithmType).Create(sourceFilePath, targetFilePath, tempDeltaFile);
+                            var content = new Content(tempDeltaFile, packagePath, pkgSettingsCopy);
+                            lock (((ICollection) Actions).SyncRoot)
+                            {
+                                Actions.Add(new PatchAction(file.Path, file.Path, pkgSettingsCopy.PatchAlgorithmType, content));
+                            }
                         }
                         finally
                         {
                             File.Delete(tempDeltaFile);
-                            pkgSettings.CompressionEnabled = origCompressionSetting;
                         }
-
-                        continue;
                     }
 
                     // moved files (different path, single hash match on both sides)
-                    if (!sourcePathMatch && sourceHashSingleMatch && targetHashSingleMatch)
+                    else if (!file.Path.IsDirectory && !sourcePathMatch && sourceHashSingleMatch && targetHashSingleMatch)
                     {
-                        Actions.Add(new MoveAction(sourceHashes[hash][0].Path, file.Path));
-                        continue;
+                        lock (((ICollection) Actions).SyncRoot)
+                        {
+                            Actions.Add(new MoveAction(sourceHashes[hash][0].Path, file.Path));
+                        }
                     }
 
                     // search for copied files (multiple hash matches, different paths)
-                    if (!sourcePathMatch && sourceHashMatch)
+                    else if (!file.Path.IsDirectory && !sourcePathMatch && sourceHashMatch)
                     {
-                        Actions.Add(new CopyAction(sourceHashes[hash][0].Path, file.Path));
-                        continue;
+                        lock (((ICollection) Actions).SyncRoot)
+                        {
+                            Actions.Add(new CopyAction(sourceHashes[hash][0].Path, file.Path));
+                        }
                     }
 
                     // search for added files (path and hash that exists in target but not source)
-                    if (!sourcePathMatch && !sourceHashMatch)
+                    else if (!file.Path.IsDirectory && !sourcePathMatch && !sourceHashMatch)
                     {
                         var content = new Content(targetFilePath, packagePath, pkgSettings);
-                        Actions.Add(new AddAction(file.Path, content));
-                        continue;
+
+                        lock (((ICollection) Actions).SyncRoot)
+                        {
+                            Actions.Add(new AddAction(file.Path, content));
+                        }
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("File action not found.");
                     }
 
-                    throw new InvalidOperationException("File action not found.");
-                }
-
+                    // propagate current progress upstream
+                    int count = Interlocked.Increment(ref processedCount);
+                    int progressPercentage = (int)(count / (float)processedCount * 100);
+                    progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
+                });
+                
                 // deleted files & directories (path that exists in source but not target)
                 foreach (var file in sourceSnapshot.Files)
                 {
@@ -354,6 +416,8 @@ namespace DiffBlit.Core.Config
 
                 // TODO: handle file/directory renames that consist of case-changes only
                 // loop through all files (should be 1:1 now) and rename if case mismatches (implies underlying directories are also renamed where applicable)
+
+                #endregion
             }
             catch (Exception ex)
             {
@@ -361,14 +425,16 @@ namespace DiffBlit.Core.Config
             }
         }
 
-        // TODO: progress indicator callback
         /// <summary>
         /// Saves the package contents to the specified local directory.
         /// </summary>
         /// <param name="baseUri">The base URI where the package content exists.</param>
         /// <param name="localDirectory">The local directory path to save the content to.</param>
-        public void Save(Path baseUri, Path localDirectory)
+        /// <param name="progressHandler">The optional handler to report progress to.</param>
+        /// <param name="progressStatus">The optional progress status description.</param>
+        public void Save(Path baseUri, Path localDirectory, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
+            int processedCount = 0;
             foreach (IAction file in Actions)
             {
                 Content content;
@@ -383,13 +449,18 @@ namespace DiffBlit.Core.Config
                     default:
                         continue;
                 }
- 
+
                 foreach (var part in content.Parts)
                 {
                     Path repoPath = baseUri + (Id + "/") + (content.Id + "/") + part.Path;
                     Path packagePath = localDirectory + (Id + "/") + (content.Id + "/") + part.Path;
                     new ReadOnlyFile(repoPath).Copy(packagePath);
                 }
+
+                // propagate current progress upstream
+                processedCount++;
+                int progressPercentage = (int)(processedCount / (float)Actions.Count * 100);
+                progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
             }
         }
 

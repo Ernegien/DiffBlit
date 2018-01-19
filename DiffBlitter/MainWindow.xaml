@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DiffBlitter"
         mc:Ignorable="d"
-        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" Loaded="Window_Loaded" ResizeMode="NoResize">
+        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" Loaded="Window_Loaded" ResizeMode="NoResize" Closed="Window_Closed">
 	<Grid>
 		<DockPanel>
 			<Menu DockPanel.Dock="Top">
@@ -20,7 +20,12 @@
 				<MenuItem Header="_About" Click="MenuItem_Click"></MenuItem>
 			</Menu>
 			<StatusBar DockPanel.Dock="Bottom" Height="28">
-				<Label Name="Status" Padding="0"></Label>
+				<StatusBarItem DockPanel.Dock="Right">
+					<ProgressBar Name="Progress" Width="100" Height="15" Value="100" DockPanel.Dock="Right"></ProgressBar>
+				</StatusBarItem>
+				<StatusBarItem>
+					<Label Name="Status" Padding="0">d</Label>
+				</StatusBarItem>
 			</StatusBar>
 			<StackPanel>
 				<UniformGrid Columns="2">

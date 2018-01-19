@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -19,16 +20,34 @@ namespace DiffBlit.Core.Utilities
     public static class Utility
     {
         /// <summary>
-        /// Computes an SHA512 hash of the specified file.
+        /// Computes an SHA512 hash of the specified file optionally reporting progress along the way.
         /// </summary>
-        /// <param name="filePath"></param>
+        /// <param name="filePath">The path of the file to hash.</param>
+        /// <param name="progressHandler">The optional handler to report progress to. Returns bytes read as the userState.</param>
         /// <returns></returns>
-        public static byte[] ComputeHash(string filePath)
+        public static byte[] ComputeHash(string filePath, ProgressChangedEventHandler progressHandler = null)
         {
-            using (FileStream file = File.OpenRead(filePath))
-            using (SHA512 sha = SHA512.Create())
+            if (progressHandler == null)
             {
-                return sha.ComputeHash(file);
+                using (FileStream file = File.OpenRead(filePath))
+                using (SHA512 sha = SHA512.Create())
+                {
+                    return sha.ComputeHash(file);
+                }
+            }
+
+            using (FileStream file = File.OpenRead(filePath))
+            using (HashAlgorithm hash = SHA512.Create())
+            using (CryptoStream hashStream = new CryptoStream(file, hash, CryptoStreamMode.Read))
+            {
+                int bytesRead;
+                byte[] buffer = new byte[1024 * 64];
+                while ((bytesRead = hashStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    int progressPercentage = (int) ((float) file.Position / file.Length * 100.0f);
+                    progressHandler.Invoke(null, new ProgressChangedEventArgs(progressPercentage, bytesRead));
+                }
+                return hash.Hash;
             }
         }
 

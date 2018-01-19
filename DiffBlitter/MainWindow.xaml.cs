@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,8 @@ using DiffBlit.Core.IO;
 using DiffBlit.Core.Utilities;
 using Path = DiffBlit.Core.IO.Path;
 
+// TODO: ensure only one worker runs at a time via attempted mutex grab at beginning of each DoWork event?
+
 namespace DiffBlitter
 {
     /// <summary>
@@ -17,60 +20,109 @@ namespace DiffBlitter
     /// </summary>
     public partial class MainWindow
     {
+        #region Fields & Properties
+
         private Repository _repo;
         private Snapshot _detectedSnapshot;
-        private string _contentPath = string.IsNullOrWhiteSpace(Config.ContentPath) ? Environment.CurrentDirectory : Config.ContentPath;
+
+        private readonly string _contentPath = string.IsNullOrWhiteSpace(Config.ContentPath)
+            ? Environment.CurrentDirectory
+            : Config.ContentPath;
+
+        private readonly BackgroundWorker _patchWorker;
+        private readonly BackgroundWorker _packageWorker;
+        private readonly BackgroundWorker _updateWorker;
+        private readonly BackgroundWorker _detectionWorker;
+
+        // TODO: subscribe all workers to this and cancel upon app close?
+        // CancellationTokenSource cancellation;
+
+        #endregion
+
+        #region Construction & Destruction
 
         public MainWindow()
         {
-            Application.Current.DispatcherUnhandledException += UnhandledException;
             InitializeComponent();
+
+            Application.Current.DispatcherUnhandledException += UnhandledException;
+
+            // wire up worker responsible for version detection
+            _detectionWorker = Utilities.Utility.CreateBackgroundWorker(VersionDetectionWorker_DoWork, WorkerOnProgressChanged, VersionDetectionWorkerOnRunWorkerCompleted);
+
+            // wire up worker responsible for applying patches
+            _patchWorker = Utilities.Utility.CreateBackgroundWorker(PatchWorkerDoWork, WorkerOnProgressChanged, VersionDetectionWorkerOnRunWorkerCompleted);
+
+            // wire up worker responsible for creating packages
+            _packageWorker = Utilities.Utility.CreateBackgroundWorker(PackageWorker_DoWork, WorkerOnProgressChanged, PackageWorkerOnRunWorkerCompleted);
+
+            // wire up worker responsible for updating the application
+            _updateWorker = Utilities.Utility.CreateBackgroundWorker(UpdateWorker_DoWork, WorkerOnProgressChanged, UpdateWorkerOnRunWorkerCompleted);
         }
 
         public void UnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-
             // TODO: log error
+
+            e.Handled = true;
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        #endregion
+
+        #region Worker General
+
+        private void WorkerOnProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            switch ((e.Source as MenuItem)?.Header)
+            UpdateProgress(e.ProgressPercentage, e.UserState as string);
+        }
+
+        #endregion
+
+        #region Version Detection
+
+        private void VersionDetectionWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            // determine current version quickly via a targeted file check if possible
+            if (!string.IsNullOrWhiteSpace(Config.VersionFilePath))
             {
-                case "_Exit":
-                    Application.Current.Shutdown();
-                    break;
-                case "_Update":
-                    UpdateCheck();
-                    break;
-                case "_Generate Repo Config":
-                    GenerateRepoConfig();
-                    break;
-                case "_Create Package":
-                    CreatePackage();
-                    break;
-                case "_About":
-                    Process.Start("https://github.com/Ernegien/DiffBlit/tree/master/DiffBlitter");
-                    break;
+                var snapshots = _repo.FindSnapshotsFromFile(_contentPath, Config.VersionFilePath);
+
+                if (snapshots.Count == 1)
+                    e.Result = snapshots.First();
             }
+
+            // otherwise fall back to full hash verification
+            e.Result = _repo.FindSnapshotFromDirectory(_contentPath, WorkerOnProgressChanged, "Detecting version");
         }
 
-        private void UpdateCheck()
+        private void VersionDetectionWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
         {
-            // TODO: 
-            throw new NotImplementedException();
+            _detectedSnapshot = runWorkerCompletedEventArgs.Result as Snapshot;
+            UpdateDetectedSnapshotLabel(_detectedSnapshot);
+            UpdateTargetVersionComboBox();
+            WorkerOnProgressChanged(this, new ProgressChangedEventArgs(0, "Idle"));
         }
 
-        private void GenerateRepoConfig()
+        #endregion
+
+        #region Updates
+
+        private void UpdateWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            string repoConfigDirectory = Utility.ShowDirectoryPicker("Select the output directory");
-            if (repoConfigDirectory == null)
-                return;
-
-            File.WriteAllText(System.IO.Path.Combine(repoConfigDirectory, "repo.json"), new Repository().Serialize());
+            // TODO: implement
         }
 
-        private void CreatePackage()
+        private void UpdateWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
+        {
+            // TODO: implement
+            WorkerOnProgressChanged(this, new ProgressChangedEventArgs(0, "Idle"));
+        }
+
+        #endregion
+
+        #region Package Creation
+
+        private void PackageWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             // TODO: replace with custom control that prompts for version and name/description info
 
@@ -94,7 +146,7 @@ namespace DiffBlitter
             var repo = Repository.Deserialize(File.ReadAllText(repoConfigPath));
 
             // generate package content
-            var package = new Package(repo, sourceDirectory, targetDirectory, packageDirectory);
+            var package = new Package(repo, sourceDirectory, targetDirectory, packageDirectory, null, WorkerOnProgressChanged, "Generating package");
             package.Name = "Package Name Goes Here";
 
             // update the source snapshot info
@@ -114,28 +166,19 @@ namespace DiffBlitter
             File.WriteAllText(repoConfigPath, repo.Serialize());
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void PackageWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
         {
-            // TODO: proper error handling and logging
-
-            // pull down the repo config
-            string json = new ReadOnlyFile(Config.RepoUri).ReadAllText();
-            _repo = Repository.Deserialize(json);
-
-            // determine current version quickly via a targeted file check if possible
-            DetectVersion();
-
-            UpdateTargetVersionComboBox();
+            WorkerOnProgressChanged(this, new ProgressChangedEventArgs(0, "Idle"));
         }
 
-        private void TargetVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateButtonStatus();
-        }
+        #endregion
+ 
+        #region Patch Worker Methods
 
-        private void Update_Click(object sender, RoutedEventArgs e)
+        private void PatchWorkerDoWork(object sender, DoWorkEventArgs e)
         {
-            var version = TargetVersion.SelectedValue as Version;
+            var version = e.Argument as Version;
+            
             Snapshot targetSnapshot = null;
 
             // find matching package
@@ -145,14 +188,14 @@ namespace DiffBlitter
                 {
                     targetSnapshot = package.TargetSnapshot;
                     var packageDirectory = Utility.GetTempDirectory();
-                    
+
                     try
                     {
                         // download package contents locally
-                        package.Save(Path.GetDirectoryName(Config.RepoUri), packageDirectory);
+                        package.Save(Path.GetDirectoryName(Config.RepoUri), packageDirectory, WorkerOnProgressChanged, "Downloading package");
 
                         // apply package
-                        package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath, Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply);
+                        package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath, Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply, WorkerOnProgressChanged, "Applying package");
                     }
                     finally
                     {
@@ -163,37 +206,89 @@ namespace DiffBlitter
                 }
             }
 
-            DetectVersion(targetSnapshot);
-            UpdateTargetVersionComboBox();
+            e.Result = targetSnapshot;
         }
 
-        private void DetectVersion(Snapshot overrideSnapshot = null)
+        //private void PatchWorkerOnRunPatchWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
+        //{
+        //    _detectedSnapshot = runWorkerCompletedEventArgs.Result as Snapshot;
+        //    UpdateDetectedSnapshotLabel(_detectedSnapshot);
+        //    UpdateTargetVersionComboBox();
+        //}
+
+        #endregion
+
+        #region UI Events
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (overrideSnapshot == null)
+            switch ((e.Source as MenuItem)?.Header)
             {
-                if (!string.IsNullOrWhiteSpace(Config.VersionFilePath))
-                {
-                    var snapshots = _repo.FindSnapshotsFromFile(_contentPath, Config.VersionFilePath);
+                case "_Exit":
+                    Application.Current.Shutdown();
+                    break;
+                case "_Update":
+                    _updateWorker.RunWorkerAsync();
+                    break;
+                case "_Generate Repo Config":
 
-                    if (snapshots.Count == 1)
-                        _detectedSnapshot = snapshots.First();
-                }
+                    string repoConfigDirectory = Utility.ShowDirectoryPicker("Select the output directory");
+                    if (repoConfigDirectory == null)
+                        return;
 
-                // otherwise fall back to full hash verification
-                if (_detectedSnapshot == null)
-                {
-                    _detectedSnapshot = _repo.FindSnapshotFromDirectory(_contentPath);
-                }
+                    File.WriteAllText(System.IO.Path.Combine(repoConfigDirectory, "repo.json"), new Repository().Serialize());
+
+                    break;
+                case "_Create Package":
+                    _packageWorker.RunWorkerAsync();
+                    break;
+                case "_About":
+                    Process.Start("https://github.com/Ernegien/DiffBlit/tree/master/DiffBlitter");
+                    break;
             }
-            else _detectedSnapshot = overrideSnapshot;
+        }
 
-            // update status
-            DetectedVersion.Content = _detectedSnapshot?.ToString() ?? "Unknown";
-            if (_detectedSnapshot == null)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // TODO: proper error handling and logging
+
+            // TODO: async all of this
+
+            // pull down the repo config
+            string json = new ReadOnlyFile(Config.RepoUri).ReadAllText();
+            _repo = Repository.Deserialize(json);
+
+            _detectionWorker.RunWorkerAsync();
+        }
+        private void TargetVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateButtonStatus();
+        }
+
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            Update.IsEnabled = false;
+            TargetVersion.IsEnabled = false;
+            _patchWorker.RunWorkerAsync(TargetVersion.SelectedValue);
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            _patchWorker?.Dispose();
+            _packageWorker?.Dispose();
+            _updateWorker?.Dispose();
+        }
+
+        #endregion
+
+        #region UI Element Update Methods
+
+        private void UpdateDetectedSnapshotLabel(Snapshot detected)
+        {
+            Dispatcher.Invoke(() =>
             {
-                Status.Content = "Unable to detect content version.";
-                return;
-            }
+                DetectedVersion.Content = detected?.ToString() ?? "Unknown";
+            });
         }
 
         private void UpdateTargetVersionComboBox()
@@ -225,5 +320,16 @@ namespace DiffBlitter
             }
             else Update.Content = "Update";
         }
+
+        private void UpdateProgress(int percentage, string status)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                Status.Content = status;
+                Progress.Value = (percentage / 100.0f) * (Progress.Maximum - Progress.Minimum);
+            });
+        }
+
+        #endregion
     }
 }

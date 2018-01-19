@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Data;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
-using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Config
 {
@@ -59,28 +60,7 @@ namespace DiffBlit.Core.Config
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public List<FileInformation> Files { get; } = new List<FileInformation>();
-
-        // TODO: progress indicator callback
-        /// <summary>
-        /// Checks if the specified directory data matches the snapshot.
-        /// </summary>
-        /// <param name="directory"></param>
-        public void Validate(string directory)
-        {
-            Parallel.ForEach(Files, file =>
-            {
-                Path path = Path.Combine(directory, file.Path);
-
-                if (file.Path.IsDirectory)
-                {
-                    if (!Directory.Exists(path))
-                        throw new DataException($"Directory {path} does not exist.");
-                }
-                else if (!Utility.ComputeHash(path).IsEqual(file.Hash))
-                    throw new DataException($"File validation failed for {path}");
-            });
-        }
-
+        
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -90,39 +70,57 @@ namespace DiffBlit.Core.Config
             
         }
 
-        // TODO: progress indicator callback
         /// <summary>
         /// Generates a snapshot using the specified path information.
         /// </summary>
-        /// <param name="repo"></param>
-        public Snapshot(string directoryPath)
+        /// <param name="directoryPath"></param>
+        /// <param name="progressHandler">The optional handler to report progress to.</param>
+        /// <param name="progressStatus">The optional progress status description.</param>
+        public Snapshot(string directoryPath, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
-            //Repository = repo ?? throw new ArgumentNullException(nameof(repo));
+            if (directoryPath == null)
+                throw new ArgumentNullException(nameof(directoryPath), "The directory path is required.");
 
-            // normalize directory path without the trailing slash
-            directoryPath = directoryPath.TrimEnd('/', '\\');
+            progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus));
+
+            // get list of files
+            var files = new DirectoryInfo(directoryPath).GetFiles("*", SearchOption.AllDirectories);
+
+            // maintain progress status
+            long hashedBytes = 0;
+            long totalBytes = files.Sum(file => file.Length);
 
             // add all files to the snapshot manifest
-            // TODO: new ParallelOptions { MaxDegreeOfParallelism = 4 }
-            object locker = new object();
-            Parallel.ForEach(Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories), file =>
+            Parallel.ForEach(files, file =>
             {
-                var hash = Utility.ComputeHash(file);
-                var relativePath = file.Substring(directoryPath.Length + 1); // file path relative to the base content path specified
-
-                lock (locker)
+                // compute the hash updating progress along the way if needed
+                var hash = progressHandler == null ? Utility.ComputeHash(file.FullName) :
+                Utility.ComputeHash(file.FullName, (sender, args) =>
                 {
-                    Files.Add(new FileInformation(relativePath, hash));
+                    // update hashed bytes count in a thread safe manner
+                    Interlocked.Add(ref hashedBytes, (int)args.UserState);
+
+                    // propagate current progress upstream
+                    int progressPercentage = (int) (hashedBytes / (float) totalBytes * 100);
+                    progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
+                });
+
+                // ensure the add is thread safe
+                lock (((ICollection)Files).SyncRoot)
+                {
+                    // file path relative to the base content path specified
+                    Files.Add(new FileInformation(file.FullName.Substring(directoryPath.Length).TrimStart('/', '\\'), hash));
                 }
             });
 
+            // TODO: add back in
             // add all empty directories to the snapshot manifest
-            foreach (var directory in Utility.GetEmptyDirectories(directoryPath))
-            {
-                // TODO: check path schema to determine whether to use forward or backwards slash?
-                var relativePath = directory.Substring(directoryPath.Length + 1) + "\\"; // file path relative to the base content path specified, including trailing slash
-                Files.Add(new FileInformation(relativePath));
-            }
+            //foreach (var directory in Utility.GetEmptyDirectories(directoryPath))
+            //{
+            //    // TODO: check path schema to determine whether to use forward or backwards slash?
+            //    var relativePath = directory.Substring(directoryPath.Length + 1) + "\\"; // file path relative to the base content path specified, including trailing slash
+            //    Files.Add(new FileInformation(relativePath));
+            //}
 
             // order files by path name
             //Files = Files.OrderBy(p => p.Path.Name).ToList();

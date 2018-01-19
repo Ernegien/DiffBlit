@@ -1,9 +1,11 @@
-﻿namespace DiffBlit.Core.Config
+﻿using System;
+
+namespace DiffBlit.Core.Config
 {
     /// <summary>
     /// TODO: description
     /// </summary>
-    public class PackageSettings
+    public class PackageSettings : ICloneable
     {
         /// <summary>
         /// The maximum cacheable file size supported by Cloudflare's free tier.
@@ -66,6 +68,15 @@
             PartExtension = partExtension;
             PatchAlgorithmType = patchAlgorithm;
             CompressionEnabled = compressionEnabled;
+        }
+
+        /// <summary>
+        /// Performs a deep clone of the package settings object.
+        /// </summary>
+        /// <returns></returns>
+        public object Clone()
+        {
+           return new PackageSettings(PartSize, PartExtension, PatchAlgorithmType, CompressionEnabled);
         }
     }
 }

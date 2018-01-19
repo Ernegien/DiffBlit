@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using DiffBlit.Core.Extensions;
@@ -77,16 +78,19 @@ namespace DiffBlit.Core.Config
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);
         }
-        
+
         /// <summary>
         /// Returns the matching snapshot contained in the directory, otherwise null.
         /// </summary>
         /// <param name="directory"></param>
+        /// <param name="progressHandler">The optional handler to report progress to.</param>
+        /// <param name="progressStatus">The optional progress status description.</param>
         /// <returns></returns>
-        public Snapshot FindSnapshotFromDirectory(string directory)
+        public Snapshot FindSnapshotFromDirectory(string directory, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
             // searches snapshots by file count in descending order to find the most specific match possible
-            return Snapshots.OrderByDescending(s => s.Files.Count).FirstOrDefault(snapshot => new Snapshot(directory).Contains(snapshot));
+            Snapshot snapshot = new Snapshot(directory, progressHandler, progressStatus);   // NOTE: this needs to be separated to prevent multiple evaluations
+            return Snapshots.OrderByDescending(s => s.Files.Count).FirstOrDefault(s => snapshot.Contains(s));
         }
 
         /// <summary>
@@ -103,6 +107,7 @@ namespace DiffBlit.Core.Config
             if (!File.Exists(path))
                 return null;
 
+            // TODO: while this normally shouldn't be expensive, should probably integrate progress reporting in case you want to deal with a large file
             var hash = Utility.ComputeHash(path);
             foreach (var snapshot in Snapshots)
             {
