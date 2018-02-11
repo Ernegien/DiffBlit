@@ -121,6 +121,17 @@ namespace DiffBlit.Core.Config
             return snapshots;
         }
 
+        /// <summary>
+        /// Attempts to locate a package based on the source and target versions.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public Package FindPackage(Version source, Version target)
+        {
+            return Packages.FirstOrDefault(package => package.SourceSnapshot.Version == source && target == package.TargetSnapshot.Version);
+        }
+
         ///// <summary>
         ///// TODO: description
         ///// </summary>

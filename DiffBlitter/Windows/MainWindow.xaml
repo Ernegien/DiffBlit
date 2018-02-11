@@ -1,20 +1,21 @@
-﻿<Window x:Class="DiffBlitter.MainWindow"
+﻿<Window x:Class="DiffBlitter.Windows.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DiffBlitter"
+        xmlns:local="clr-namespace:DiffBlitter.Windows"
         mc:Ignorable="d"
-        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" Loaded="Window_Loaded" ResizeMode="NoResize" Closed="Window_Closed">
+        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" ResizeMode="NoResize" Closed="Window_Closed">
 	<Grid>
 		<DockPanel>
 			<Menu DockPanel.Dock="Top">
 				<MenuItem Header="_File">
-					<MenuItem Header="_Update" Click="MenuItem_Click"></MenuItem>
+					<MenuItem Header="_Settings" Click="MenuItem_Click"></MenuItem>
 					<MenuItem Header="_Exit" Click="MenuItem_Click"></MenuItem>
 				</MenuItem>
 				<MenuItem Header="_Tools">
-					<MenuItem Header="_Generate Repo Config" Click="MenuItem_Click"></MenuItem>
+					<MenuItem Header="_Create Repository Configuration" Click="MenuItem_Click"></MenuItem>
+					<MenuItem Header="_Create Snapshot" Click="MenuItem_Click"></MenuItem>
 					<MenuItem Header="_Create Package" Click="MenuItem_Click"></MenuItem>
 				</MenuItem>
 				<MenuItem Header="_About" Click="MenuItem_Click"></MenuItem>
@@ -24,7 +25,7 @@
 					<ProgressBar Name="Progress" Width="100" Height="15" Value="100" DockPanel.Dock="Right"></ProgressBar>
 				</StatusBarItem>
 				<StatusBarItem>
-					<Label Name="Status" Padding="0">d</Label>
+					<Label Name="Status" Padding="0">Idle</Label>
 				</StatusBarItem>
 			</StatusBar>
 			<StackPanel>
@@ -37,7 +38,7 @@
 					</GroupBox>
 				</UniformGrid>
 
-				<Button Name="Update" Margin="10" Height="40" IsEnabled="False" Click="Update_Click">Update</Button>
+				<Button Name="Patch" Margin="10" Height="40" IsEnabled="False" Click="Patch_Click">Update</Button>
 			</StackPanel>
 		</DockPanel>
 	</Grid>

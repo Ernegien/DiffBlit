@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using DiffBlit.Core.Logging;
 
 namespace DiffBlitter
 {
@@ -9,9 +10,32 @@ namespace DiffBlitter
     public static class Config
     {
         /// <summary>
-        /// The repo uri path.
+        /// The log verbosity level.
         /// </summary>
-        public static string RepoUri => ConfigurationManager.AppSettings["RepoUri"];
+        public static LogLevel LogLevel
+        {
+            get
+            {
+                try
+                {
+                    return (LogLevel) Enum.Parse(typeof(LogLevel), ConfigurationManager.AppSettings["LogLevel"], true);
+                }
+                catch
+                {
+                    return LogLevel.Info;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The content repo uri path.
+        /// </summary>
+        public static string ContentRepoUri => ConfigurationManager.AppSettings["ContentRepoUri"];
+
+        /// <summary>
+        /// The updater repo uri path.
+        /// </summary>
+        public static string UpdaterRepoUri => ConfigurationManager.AppSettings["UpdaterRepoUri"];
 
         /// <summary>
         /// The local file content path.

@@ -193,7 +193,7 @@ namespace DiffBlit.Core.Utilities
         /// </summary>
         /// <param name="prompt"></param>
         /// <returns></returns>
-        public static string ShowDirectoryPicker(string prompt)
+        public static string ShowDirectoryPicker(string prompt = null)
         {
             using (CommonOpenFileDialog ofd = new CommonOpenFileDialog())
             {
@@ -215,7 +215,7 @@ namespace DiffBlit.Core.Utilities
         /// <param name="prompt"></param>
         /// <param name="extensionFilter"></param>
         /// <returns></returns>
-        public static string ShowFilePicker(string prompt, string extensionFilter = null)
+        public static string ShowFilePicker(string prompt = null, string extensionFilter = null)
         {
             using (OpenFileDialog ofd = new OpenFileDialog())
             {

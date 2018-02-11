@@ -44,9 +44,9 @@ namespace DiffBlit.Core.Logging
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Logger _instance;
+        private static Logger _instance;
 
-        public Logger Instance => _instance ?? (_instance = new Logger());
+        public static Logger Instance => _instance ?? (_instance = new Logger());
 
         /// <summary>
         /// Creates a Serilog file.

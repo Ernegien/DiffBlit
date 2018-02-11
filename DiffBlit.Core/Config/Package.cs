@@ -75,6 +75,10 @@ namespace DiffBlit.Core.Config
         [JsonProperty(Required = Required.Always, ItemTypeNameHandling = TypeNameHandling.Auto)]
         public List<IAction> Actions { get; } = new List<IAction>();
 
+        //TODO: will need to disable multi-threaded processing of actions during application if specified
+        //[JsonProperty(Required = Required.Default)]
+        //public bool PreserveActionOrder { get; set; }
+
         /// <summary>
         /// Applies package actions in-order against the target directory using the contents of the package directory.
         /// </summary>
@@ -177,7 +181,6 @@ namespace DiffBlit.Core.Config
             
         }
 
-        // TODO: progress indicator callback
         /// <summary>
         /// Generates package content differentials between the source and target snapshots in the specified output path.
         /// </summary>

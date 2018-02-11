@@ -81,7 +81,9 @@ namespace DiffBlit.Core.Config
             if (directoryPath == null)
                 throw new ArgumentNullException(nameof(directoryPath), "The directory path is required.");
 
-            progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus));
+            const string defaultProgressStatus = "Generating snapshot";
+
+            progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus ?? defaultProgressStatus));
 
             // get list of files
             var files = new DirectoryInfo(directoryPath).GetFiles("*", SearchOption.AllDirectories);
@@ -102,7 +104,7 @@ namespace DiffBlit.Core.Config
 
                     // propagate current progress upstream
                     int progressPercentage = (int) (hashedBytes / (float) totalBytes * 100);
-                    progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
+                    progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus ?? defaultProgressStatus));
                 });
 
                 // ensure the add is thread safe
