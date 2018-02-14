@@ -17,6 +17,7 @@ using Path = DiffBlit.Core.IO.Path;
 namespace DiffBlitter.Windows
 {
     // TODO: fallback repo URIs
+    // TODO: better error-handling - failures can cause invalid ui states
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -48,7 +49,7 @@ namespace DiffBlitter.Windows
         private Snapshot _detectedSnapshot;
 
         private readonly string _contentPath = string.IsNullOrWhiteSpace(Config.ContentPath)
-            ? Environment.CurrentDirectory
+            ? AppDomain.CurrentDomain.BaseDirectory
             : Config.ContentPath;
 
         private readonly BackgroundWorker _detectionWorker;
@@ -129,7 +130,7 @@ namespace DiffBlitter.Windows
                 {
                     var snapshots = PackageRepository.FindSnapshotsFromFile(_contentPath, Config.VersionFilePath);
 
-                    if (snapshots.Count == 1)
+                    if (snapshots?.Count == 1)
                         _detectedSnapshot = snapshots.First();
                 }
 
@@ -147,6 +148,11 @@ namespace DiffBlitter.Windows
                 });
 
                 _logger.Info("Version detection completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Unhandled Exception");
+                throw;
             }
             finally
             {
@@ -252,8 +258,8 @@ namespace DiffBlitter.Windows
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Update failed");
-                // TODO: show messagebox, or just swallow the exception?
+                _logger.Error(ex, "Unhandled Exception");
+                throw;
             }
             finally
             {
@@ -321,6 +327,11 @@ namespace DiffBlitter.Windows
                 }
 
                 _logger.Info("Snapshot creation completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Unhandled Exception");
+                throw;
             }
             finally
             {
@@ -398,6 +409,11 @@ namespace DiffBlitter.Windows
 
                 _logger.Info("Package creation completed");
             }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Unhandled Exception");
+                throw;
+            }
             finally
             {
                 _packageWorker.ReportProgress(0, "Idle");
@@ -439,12 +455,14 @@ namespace DiffBlitter.Windows
                 {
                     // download package contents locally
                     _logger.Info("Attempting to download package contents from {0}", Config.ContentRepoUri);
-                    package.Save(Path.GetDirectoryName(Config.ContentRepoUri), packageDirectory, WorkerOnProgressChanged, "Downloading package");
+                    package.Save(Path.GetDirectoryName(Config.ContentRepoUri), packageDirectory,
+                        WorkerOnProgressChanged, "Downloading package");
 
                     // apply package
                     _logger.Info("Applying package");
                     package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath,
-                        Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply, WorkerOnProgressChanged, "Applying package");
+                        Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply, WorkerOnProgressChanged,
+                        "Applying package");
                 }
                 finally
                 {
@@ -461,6 +479,11 @@ namespace DiffBlitter.Windows
                 });
 
                 _logger.Info("Patch completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Unhandled Exception");
+                throw;
             }
             finally
             {

@@ -95,23 +95,31 @@ namespace DiffBlit.Core.Config
             // add all files to the snapshot manifest
             Parallel.ForEach(files, file =>
             {
-                // compute the hash updating progress along the way if needed
-                var hash = progressHandler == null ? Utility.ComputeHash(file.FullName) :
-                Utility.ComputeHash(file.FullName, (sender, args) =>
+                // TODO: cleanup - attempts to snapshot log files as they're in use when ran within content directory
+                try
                 {
-                    // update hashed bytes count in a thread safe manner
-                    Interlocked.Add(ref hashedBytes, (int)args.UserState);
+                    // compute the hash updating progress along the way if needed
+                    var hash = progressHandler == null ? Utility.ComputeHash(file.FullName) :
+                        Utility.ComputeHash(file.FullName, (sender, args) =>
+                        {
+                            // update hashed bytes count in a thread safe manner
+                            Interlocked.Add(ref hashedBytes, (int)args.UserState);
 
-                    // propagate current progress upstream
-                    int progressPercentage = (int) (hashedBytes / (float) totalBytes * 100);
-                    progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus ?? defaultProgressStatus));
-                });
+                            // propagate current progress upstream
+                            int progressPercentage = (int)(hashedBytes / (float)totalBytes * 100);
+                            progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus ?? defaultProgressStatus));
+                        });
 
-                // ensure the add is thread safe
-                lock (((ICollection)Files).SyncRoot)
+                    // ensure the add is thread safe
+                    lock (((ICollection)Files).SyncRoot)
+                    {
+                        // file path relative to the base content path specified
+                        Files.Add(new FileInformation(file.FullName.Substring(directoryPath.Length).TrimStart('/', '\\'), hash));
+                    }
+                }
+                catch
                 {
-                    // file path relative to the base content path specified
-                    Files.Add(new FileInformation(file.FullName.Substring(directoryPath.Length).TrimStart('/', '\\'), hash));
+                   // do nothing for now
                 }
             });
 
@@ -129,13 +137,13 @@ namespace DiffBlit.Core.Config
         }
 
         /// <summary>
-        /// Returns true if the snapshot contents are contained in the other.
+        /// Returns true if the other snapshot is contained within.
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
         public bool Contains(Snapshot other)
         {
-            return Files.All(file => other.Files.Contains(file));
+            return other.Files.All(file => Files.Contains(file));
         }
 
         /// <summary>

@@ -91,7 +91,7 @@ namespace DiffBlit.Core.Config
         public void Apply(Path packageDirectory, Path targetDirectory, bool validateBefore = true, bool validateAfter = true, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
             // validate source content
-            if (validateBefore && !SourceSnapshot.Equals(new Snapshot(targetDirectory, progressHandler, "Validating source content")))
+            if (validateBefore && !new Snapshot(targetDirectory, progressHandler, "Validating source content").Contains(SourceSnapshot))
             {
                 throw new DataException("Directory contents do not match the source snapshot.");
             }
@@ -101,6 +101,7 @@ namespace DiffBlit.Core.Config
 
             int processedCount = 0;
 
+            // TODO: verify backup/rollback logic
             try
             {
                 const string backupStepName = "Performing backup";
@@ -137,13 +138,14 @@ namespace DiffBlit.Core.Config
                     progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
                 }
 
+                // TODO: selective file validation fed from list of changed files after patch application
                 // validate modified content
-                if (validateAfter && !TargetSnapshot.Equals(new Snapshot(targetDirectory, progressHandler, "Validating output")))
+                if (validateAfter && !new Snapshot(targetDirectory, progressHandler, "Validating output").Contains(TargetSnapshot))
                 {
                     throw new DataException("Directory contents do not match the target snapshot.");
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 const string rollbackStepName = "Performing rollback";
                 progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, rollbackStepName));
@@ -152,7 +154,16 @@ namespace DiffBlit.Core.Config
                 // if failure is detected, delete any existing targets and restore any backups
                 foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
-                    File.Delete(Path.Combine(targetDirectory, action.TargetPath));
+                    // TODO: cleanup
+                    try
+                    {
+                        File.Delete(Path.Combine(targetDirectory, action.TargetPath));
+                    }
+                    catch (Exception e)
+                    {
+                 
+                    }
+       
                     Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
                     if (File.Exists(backupPath))
                         File.Copy(backupPath, Path.Combine(targetDirectory, action.TargetPath), true);

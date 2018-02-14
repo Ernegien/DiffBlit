@@ -47,16 +47,24 @@ namespace DiffBlit.Core.Actions
         /// <param name="context"></param>
         public void Run(ActionContext context)
         {
-            Path path = Path.Combine(context.BasePath, TargetPath);
-            if (path.IsDirectory)
+            // TODO: WPF apps will automatically load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing it from being overwritten
+            try
             {
-                Directory.CreateDirectory(path);
+                Path path = Path.Combine(context.BasePath, TargetPath);
+                if (path.IsDirectory)
+                {
+                    Directory.CreateDirectory(path);
+                }
+                else if (Content != null)
+                {
+                    Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), path);
+                }
+                else File.Create(path).Dispose();
             }
-            else if (Content != null)
+            catch
             {
-                Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), path);
+                // HACK: hack hack hack
             }
-            else File.Create(path).Dispose();
         }
     }
 }

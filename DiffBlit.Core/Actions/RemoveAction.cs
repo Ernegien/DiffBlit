@@ -48,14 +48,22 @@ namespace DiffBlit.Core.Actions
             if (context.BasePath == null)
                 throw new NullReferenceException("The base path must be specified.");
 
-            string path = Path.Combine(context.BasePath, TargetPath);
-            if (TargetPath.IsDirectory)
+            // TODO:  WPF apps will automatically load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing it from being deleted
+            try
             {
-                Directory.Delete(path);
+                string path = Path.Combine(context.BasePath, TargetPath);
+                if (TargetPath.IsDirectory)
+                {
+                    Directory.Delete(path);
+                }
+                else
+                {
+                    File.Delete(path);
+                }
             }
-            else
+            catch
             {
-                File.Delete(path);
+                // HACK: hack hack hack
             }
         }
     }
