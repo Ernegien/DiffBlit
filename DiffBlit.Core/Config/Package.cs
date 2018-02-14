@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DiffBlit.Core.Actions;
@@ -468,7 +469,15 @@ namespace DiffBlit.Core.Config
                 {
                     Path repoPath = baseUri + (Id + "/") + (content.Id + "/") + part.Path;
                     Path packagePath = localDirectory + (Id + "/") + (content.Id + "/") + part.Path;
-                    new ReadOnlyFile(repoPath).Copy(packagePath);
+
+                    // TODO: this hangs when not being debugged, CopyTo probably shouldn't be used internally
+                    //new ReadOnlyFile(repoPath).Copy(packagePath);
+
+                    // TODO: limited to http(s) URIs for now
+                    using (WebClient wc = new GZipWebClient())
+                    {
+                        wc.DownloadFile(repoPath, packagePath);
+                    }
                 }
 
                 // propagate current progress upstream

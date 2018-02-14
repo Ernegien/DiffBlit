@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
@@ -214,10 +215,12 @@ namespace DiffBlitter.Windows
                     {
                         foreach (var file in newestSnapshot.Files)
                         {
+                            _logger.Info("Updating {0}", file);
+
                             string remoteFileDirectory = Path.Combine(Path.GetDirectoryName(Config.UpdaterRepoUri) + "/", newestSnapshot.Version.ToString());
                             string remoteFilePath = Path.Combine(remoteFileDirectory + "/", file.Path);
                             string localFilePath = Path.Combine(binDir, file.Path);
-                 
+
                             // rename local file with backup extension if it exists, deleting any that already exist
                             if (File.Exists(localFilePath))
                             {
@@ -225,9 +228,16 @@ namespace DiffBlitter.Windows
                                 File.Delete(backupPath);
                                 File.Move(localFilePath, backupPath);
                             }
-                            
+
                             // download remote file
-                            new ReadOnlyFile(remoteFilePath).Copy(localFilePath);
+                            // TODO: this hangs when not being debugged, CopyTo probably shouldn't be used internally
+                            //new ReadOnlyFile(remoteFilePath).Copy(tmpFile); // this fucks up in production
+
+                            using (WebClient wc = new GZipWebClient())
+                            {
+                                wc.DownloadFile(remoteFilePath, localFilePath);
+                            }
+                            _logger.Info("Finished updating {0}", file);
                         }
                     }
                     catch

@@ -46,28 +46,28 @@ namespace DiffBlit.Core.IO
             throw new NotSupportedException();
         }
 
-        /// <summary>
-        /// Copies file contents to the specified local path.
-        /// </summary>
-        /// <param name="localPath"></param>
-        public void Copy(string localPath)
-        {
-            if (localPath == null)
-                throw new ArgumentNullException(nameof(localPath));
+        ///// <summary>
+        ///// Copies file contents to the specified local path.
+        ///// </summary>
+        ///// <param name="localPath"></param>
+        //public void Copy(string localPath)
+        //{
+        //    if (localPath == null)
+        //        throw new ArgumentNullException(nameof(localPath));
 
-            // make sure the directory exists beforehand
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(localPath) ?? throw new InvalidOperationException());
+        //    // make sure the directory exists beforehand
+        //    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(localPath) ?? throw new InvalidOperationException());
 
-            if (Path.Scheme != Uri.UriSchemeFile)
-            {
-                using (var input = Open())
-                using (var output = File.OpenWrite(localPath))
-                {
-                    input.CopyTo(output);
-                }
-            }
-            else File.Copy(Path.LocalPath, localPath);
-        }
+        //    if (Path.Scheme != Uri.UriSchemeFile)
+        //    {
+        //        using (var input = Open())
+        //        using (var output = File.OpenWrite(localPath))
+        //        {
+        //            input.CopyTo(output);
+        //        }
+        //    }
+        //    else File.Copy(Path.LocalPath, localPath);
+        //}
 
         /// <summary>
         /// Reads all of the file contexts as text.
