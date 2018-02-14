@@ -230,13 +230,7 @@ namespace DiffBlitter.Windows
                             }
 
                             // download remote file
-                            // TODO: this hangs when not being debugged, CopyTo probably shouldn't be used internally
-                            //new ReadOnlyFile(remoteFilePath).Copy(tmpFile); // this fucks up in production
-
-                            using (WebClient wc = new GZipWebClient())
-                            {
-                                wc.DownloadFile(remoteFilePath, localFilePath);
-                            }
+                            new ReadOnlyFile(remoteFilePath).Copy(localFilePath);
                             _logger.Info("Finished updating {0}", file);
                         }
                     }
