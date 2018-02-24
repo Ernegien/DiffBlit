@@ -10,7 +10,7 @@ namespace DiffBlit.Core.Logging
     /// <summary>
     /// Serilog structured event logger.
     /// </summary>
-    public sealed class Logger : LoggerBase
+    public sealed class SeriLogger : LoggerBase
     {
         /// <summary>
         /// Allows the switching of log event levels without creating a new logger.
@@ -48,7 +48,7 @@ namespace DiffBlit.Core.Logging
         /// </summary>
         /// <param name="level">The minimum log level.</param>
         /// <param name="path">The log file path.</param>
-        public Logger(LogLevel level = LogLevel.Info, string path = null)
+        public SeriLogger(LogLevel level = LogLevel.Info, string path = null)
         {
             IsEnabled = true;
             Level = level;
@@ -82,6 +82,7 @@ namespace DiffBlit.Core.Logging
             }
             catch (Exception e)
             {
+                // TODO: application EventLog fallback?
                 Console.WriteLine(e);
             }
         }

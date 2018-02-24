@@ -3,18 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DiffBlit.Core.Actions;
 using DiffBlit.Core.IO;
+using DiffBlit.Core.Logging;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core
 {
     /// <summary>
     /// TODO: description
@@ -22,6 +23,12 @@ namespace DiffBlit.Core.Config
     [JsonObject(MemberSerialization.OptOut)]
     public class Package
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// The parent repository the package belongs to.
         /// </summary>
@@ -80,6 +87,7 @@ namespace DiffBlit.Core.Config
         //[JsonProperty(Required = Required.Default)]
         //public bool PreserveActionOrder { get; set; }
 
+        // TODO: when order is not important, perform multi-threaded execution in order of biggest to smallest
         /// <summary>
         /// Applies package actions in-order against the target directory using the contents of the package directory.
         /// </summary>

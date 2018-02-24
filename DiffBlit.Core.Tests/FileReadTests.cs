@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using DiffBlit.Core.Extensions;
 using DiffBlit.Core.IO;
+using DiffBlit.Core.Utilities;
 
 namespace DiffBlit.Core.Tests
 {
@@ -18,6 +19,11 @@ namespace DiffBlit.Core.Tests
                 Assert.IsTrue(s.Length > 0);
                 Assert.AreEqual(data.Length, s.Length);
                 Assert.IsFalse(s.CanWrite);
+
+                var temp = Utility.GetTempFilePath();
+                localFile.Copy(temp);
+                Assert.IsTrue(data.IsEqual(File.ReadAllBytes(temp)));
+                File.Delete(temp);
             }
         }
 
@@ -31,6 +37,11 @@ namespace DiffBlit.Core.Tests
                 byte[] data = s.ReadAllBytes();
                 Assert.AreEqual(data.Length, 0x400);
                 Assert.IsFalse(s.CanWrite);
+
+                var temp = Utility.GetTempFilePath();
+                webFile.Copy(temp);
+                Assert.IsTrue(data.IsEqual(File.ReadAllBytes(temp)));
+                File.Delete(temp);
             }
         }
 
@@ -43,6 +54,11 @@ namespace DiffBlit.Core.Tests
                 byte[] data = s.ReadAllBytes();
                 Assert.AreEqual(data.Length, 0x400);
                 Assert.IsFalse(s.CanWrite);
+
+                var temp = Utility.GetTempFilePath();
+                ftpFile.Copy(temp);
+                Assert.IsTrue(data.IsEqual(File.ReadAllBytes(temp)));
+                File.Delete(temp);
             }
         }
     }

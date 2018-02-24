@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using DiffBlit.Core.Extensions;
+using DiffBlit.Core.Logging;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core
 {
     // TODO: patcher version? force update if repo is generated with newer patcher in case of schema changes
     // TODO: validate method that checks for duplicate packages etc.
@@ -18,6 +20,12 @@ namespace DiffBlit.Core.Config
     [JsonObject(MemberSerialization.OptOut, IsReference = true)]
     public class Repository
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -94,7 +102,7 @@ namespace DiffBlit.Core.Config
         }
 
         /// <summary>
-        /// Attempts to locate snapshots that contain a matching file path and contents
+        /// Attempts to locate snapshots that contain a matching file path and contents.
         /// </summary>
         /// <param name="basePath">The local absolute content directory.</param>
         /// <param name="repoPath">The repo file path relative to the base directory.</param>
@@ -104,17 +112,23 @@ namespace DiffBlit.Core.Config
             List<Snapshot> snapshots = new List<Snapshot>();
 
             var path = Path.Combine(basePath, repoPath);
+
+            // make sure the local file exists
             if (!File.Exists(path))
                 return null;
 
-            // TODO: while this normally shouldn't be expensive, should probably integrate progress reporting in case you want to deal with a large file
-            var hash = Utility.ComputeHash(path);
+            byte[] hash = null;
             foreach (var snapshot in Snapshots)
             {
-                foreach (var file in snapshot.FindFileFromHash(hash))
+                var file = snapshot.FindFileFromPath(repoPath);
+
+                // only compute this once if even needed
+                if (hash == null)
+                    hash = Utility.ComputeHash(path);
+
+                if (file != null && file.Hash.IsEqual(hash))
                 {
-                    if (file.Path.Equals(repoPath) && file.Hash.IsEqual(hash))
-                        snapshots.Add(snapshot);
+                    snapshots.Add(snapshot);
                 }
             }
 

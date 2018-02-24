@@ -1,5 +1,4 @@
-﻿using DiffBlit.Core.Config;
-using DiffBlit.Core.IO;
+﻿using DiffBlit.Core.IO;
 using Newtonsoft.Json;
 
 namespace DiffBlit.Core.Actions

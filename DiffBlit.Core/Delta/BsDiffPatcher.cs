@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using DiffBlit.Core.Logging;
 using ICSharpCode.SharpZipLib.BZip2;
 
 namespace DiffBlit.Core.Delta
@@ -10,6 +12,12 @@ namespace DiffBlit.Core.Delta
     public class BsDiffPatcher : IPatcher
     {
         /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
+        /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="sourcePath"></param>
@@ -17,6 +25,7 @@ namespace DiffBlit.Core.Delta
         /// <param name="deltaPath"></param>
         public void Create(string sourcePath, string targetPath, string deltaPath)
         {
+            Logger.Info("Creating BsDiff patch at {0} from {1} to {2}", deltaPath, sourcePath, targetPath);
             using (FileStream patchStream = new FileStream(deltaPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 Create(File.ReadAllBytes(sourcePath), File.ReadAllBytes(targetPath), patchStream);
@@ -31,6 +40,7 @@ namespace DiffBlit.Core.Delta
         /// <param name="targetPath"></param>
         public void Apply(string sourcePath, string deltaPath, string targetPath)
         {
+            Logger.Info("Applying BsDiff patch {0} against {1} to {2}", deltaPath, sourcePath, targetPath);
             using (FileStream origStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (FileStream outputStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {

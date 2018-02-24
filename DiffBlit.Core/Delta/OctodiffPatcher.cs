@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
+using DiffBlit.Core.Logging;
 using Octodiff.Core;
 
 namespace DiffBlit.Core.Delta
@@ -9,6 +11,12 @@ namespace DiffBlit.Core.Delta
     public class OctodiffPatcher : IPatcher
     {
         /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
+        /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="sourcePath"></param>
@@ -16,6 +24,8 @@ namespace DiffBlit.Core.Delta
         /// <param name="deltaPath"></param>
         public void Create(string sourcePath, string targetPath, string deltaPath)
         {
+            Logger.Info("Creating Octodiff patch at {0} from {1} to {2}", deltaPath, sourcePath, targetPath);
+
             using (Stream orig = File.OpenRead(sourcePath))
             using (Stream target = File.OpenRead(targetPath))
             using (Stream patch = File.OpenWrite(deltaPath))
@@ -38,6 +48,8 @@ namespace DiffBlit.Core.Delta
         /// <param name="targetPath"></param>
         public void Apply(string sourcePath, string deltaPath, string targetPath)
         {
+            Logger.Info("Applying Octodiff patch {0} against {1} to {2}", deltaPath, sourcePath, targetPath);
+
             using (var output = File.Open(targetPath, FileMode.Create, FileAccess.ReadWrite))
             using (var delta = File.OpenRead(deltaPath))
             using (var orig = File.OpenRead(sourcePath))

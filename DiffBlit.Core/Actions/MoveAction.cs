@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
-using DiffBlit.Core.Config;
+using DiffBlit.Core.Logging;
 using Newtonsoft.Json;
 using Path = DiffBlit.Core.IO.Path;
 
@@ -12,6 +13,12 @@ namespace DiffBlit.Core.Actions
     [JsonObject(MemberSerialization.OptOut)]
     public class MoveAction : IAction
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -59,9 +66,14 @@ namespace DiffBlit.Core.Actions
             if (SourcePath.Equals(TargetPath))
                 throw new NotSupportedException("Are you sure about that?");
 
+            Path sourcePath = Path.Combine(context.BasePath, SourcePath);
             Path targetPath = Path.Combine(context.BasePath, TargetPath);
+
+            // ensure that target directory path exists
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
-            File.Move(Path.Combine(context.BasePath, SourcePath), targetPath);
+
+            Logger.Info("Moving {0} to {1}", sourcePath, targetPath);
+            File.Move(sourcePath, targetPath);
         }
     }
 }

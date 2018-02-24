@@ -1,5 +1,4 @@
 ﻿using System;
-using DiffBlit.Core.Config;
 using DiffBlit.Core.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

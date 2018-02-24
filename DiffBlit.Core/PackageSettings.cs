@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core
 {
     /// <summary>
     /// TODO: description

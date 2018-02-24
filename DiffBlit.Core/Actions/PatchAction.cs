@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
-using DiffBlit.Core.Config;
 using DiffBlit.Core.Delta;
+using DiffBlit.Core.Logging;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 using Path = DiffBlit.Core.IO.Path;
@@ -14,6 +15,12 @@ namespace DiffBlit.Core.Actions
     [JsonObject(MemberSerialization.OptOut)]
     public class PatchAction : IAction
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>

@@ -49,10 +49,10 @@ namespace DiffBlitter.Windows
                 ValidationText.Text += "Snapshot version format is invalid" + Environment.NewLine;
 
             if (!Directory.Exists(SnapshotDirectory.Path))
-                ValidationText.Text += "Snapshot directory does not exist" + Environment.NewLine;
+                ValidationText.Text += "Snapshot directory is invalid or does not exist" + Environment.NewLine;
 
             if (!File.Exists(ConfigPath.Path))
-                ValidationText.Text += "Repository configuration file does not exist" + Environment.NewLine;
+                ValidationText.Text += "Repository configuration file is invalid or does not exist" + Environment.NewLine;
 
             bool success = ValidationText.Text.Length == 0;
             ValidationText.Visibility = success ? Visibility.Collapsed : Visibility.Visible;

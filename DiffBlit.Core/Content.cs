@@ -1,17 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using DiffBlit.Core.Extensions;
+using DiffBlit.Core.Logging;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 using Path = DiffBlit.Core.IO.Path;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core
 {
     [JsonObject(MemberSerialization.OptOut)]
     public class Content : IEquatable<Content>
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>

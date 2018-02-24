@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using DiffBlit.Core.Config;
+﻿using System.Collections.Generic;
 using DiffBlit.Core.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

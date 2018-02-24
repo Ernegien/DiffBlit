@@ -56,5 +56,10 @@ namespace DiffBlitter
         /// Indicates whether or not content should be validated after package application.
         /// </summary>
         public static bool ValidateAfterPackageApply => Convert.ToBoolean(ConfigurationManager.AppSettings["ValidateAfterPackageApply"]);
+
+        /// <summary>
+        /// Determines whether or not to prompt the user for permission to update itself.
+        /// </summary>
+        public static bool UpdaterAutoUpdate => Convert.ToBoolean(ConfigurationManager.AppSettings["UpdaterAutoUpdate"]);
     }
 }

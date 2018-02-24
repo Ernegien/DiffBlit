@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using DiffBlit.Core.Config;
 using DiffBlit.Core.Delta;
 using DiffBlit.Core.Extensions;
+using DiffBlit.Core.IO;
 using ICSharpCode.SharpZipLib.BZip2;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Path = DiffBlit.Core.IO.Path;
@@ -229,6 +230,32 @@ namespace DiffBlit.Core.Utilities
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Opens a read only stream to the given web Uri.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        public static ReadOnlyStream OpenWebStream(Uri uri)
+        {
+            using (GZipWebClient client = new GZipWebClient())
+            {
+                return new ReadOnlyStream(client.OpenRead(uri));
+            }
+        }
+
+        /// <summary>
+        /// Downloads a file from the web to the specified path.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="path"></param>
+        public static void DownloadWebFile(Uri uri, string path)
+        {
+            using (WebClient wc = new GZipWebClient())
+            {
+                wc.DownloadFile(uri, path);
+            }
         }
     }
 }

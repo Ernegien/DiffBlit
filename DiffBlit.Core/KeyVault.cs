@@ -1,4 +1,4 @@
-﻿namespace DiffBlit.Core.Config
+﻿namespace DiffBlit.Core
 {
     // TODO:
     public class KeyVault

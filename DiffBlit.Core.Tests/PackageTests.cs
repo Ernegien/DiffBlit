@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using DiffBlit.Core.Config;
 using DiffBlit.Core.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Path = DiffBlit.Core.IO.Path;

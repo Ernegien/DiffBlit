@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net;
 using DiffBlit.Core.Utilities;
 
 namespace DiffBlit.Core.IO
@@ -30,18 +29,15 @@ namespace DiffBlit.Core.IO
         /// </summary>
         public ReadOnlyStream Open()
         {
-            if (Path.Scheme == Uri.UriSchemeHttp || Path.Scheme == Uri.UriSchemeHttps ||
-                Path.Scheme == Uri.UriSchemeFtp && string.IsNullOrWhiteSpace(Path.UserInfo))
-            {
-                using (GZipWebClient client = new GZipWebClient())
-                {
-                    return new ReadOnlyStream(client.OpenRead(Path));
-                }
-            }
-
             if (Path.Scheme == Uri.UriSchemeFile)
             {
                 return new ReadOnlyStream(new FileStream(Path.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+            }
+
+            if (Path.Scheme == Uri.UriSchemeHttp || Path.Scheme == Uri.UriSchemeHttps ||
+                Path.Scheme == Uri.UriSchemeFtp && string.IsNullOrWhiteSpace(Path.UserInfo))
+            {
+                return Utility.OpenWebStream(Path);
             }
 
             throw new NotSupportedException();
@@ -59,14 +55,16 @@ namespace DiffBlit.Core.IO
             // make sure the directory exists beforehand
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(localPath) ?? throw new InvalidOperationException());
 
-            if (Path.Scheme != Uri.UriSchemeFile)
+            if (Path.Scheme == Uri.UriSchemeFile)
             {
-                using (WebClient wc = new GZipWebClient())
-                {
-                    wc.DownloadFile(Path, localPath);
-                }
+                File.Copy(Path.LocalPath, localPath);
             }
-            else File.Copy(Path.LocalPath, localPath);
+            else if (Path.Scheme == Uri.UriSchemeHttp || Path.Scheme == Uri.UriSchemeHttps ||
+                     Path.Scheme == Uri.UriSchemeFtp && string.IsNullOrWhiteSpace(Path.UserInfo))
+            {
+                Utility.DownloadWebFile(Path, localPath);
+            }
+            else throw new NotSupportedException();
         }
 
         /// <summary>

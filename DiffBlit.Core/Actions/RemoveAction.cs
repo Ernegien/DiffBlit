@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
-using DiffBlit.Core.Config;
+using DiffBlit.Core.Logging;
 using Newtonsoft.Json;
 using Path = DiffBlit.Core.IO.Path;
 
@@ -12,6 +13,12 @@ namespace DiffBlit.Core.Actions
     [JsonObject(MemberSerialization.OptOut)]
     public class RemoveAction : IAction
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -48,22 +55,30 @@ namespace DiffBlit.Core.Actions
             if (context.BasePath == null)
                 throw new NullReferenceException("The base path must be specified.");
 
-            // TODO:  WPF apps will automatically load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing it from being deleted
             try
             {
                 string path = Path.Combine(context.BasePath, TargetPath);
                 if (TargetPath.IsDirectory)
                 {
+                    Logger.Info("Deleting directory {0}", path);
                     Directory.Delete(path);
                 }
                 else
                 {
+                    Logger.Info("Deleting file {0}", path);
                     File.Delete(path);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // HACK: hack hack hack
+                // HACK: WPF apps load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing deletion
+                if (TargetPath.ToString().EndsWith("d3dcompiler_47.dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Warn(ex, "Please disregard for now");
+                    return;
+                }
+
+                throw;
             }
         }
     }

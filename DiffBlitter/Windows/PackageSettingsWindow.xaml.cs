@@ -49,7 +49,7 @@ namespace DiffBlitter.Windows
                 ValidationText.Text += "Source version format is invalid" + Environment.NewLine;
 
             if (!Directory.Exists(SourceDirectory.Path))
-                ValidationText.Text += "Source directory does not exist" + Environment.NewLine;
+                ValidationText.Text += "Source directory is invalid or does not exist" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(TargetName.Text))
                 ValidationText.Text += "Target content name must be specified" + Environment.NewLine;
@@ -58,13 +58,13 @@ namespace DiffBlitter.Windows
                 ValidationText.Text += "Target version format is invalid" + Environment.NewLine;
 
             if (!Directory.Exists(TargetDirectory.Path))
-                ValidationText.Text += "Target directory does not exist" + Environment.NewLine;
+                ValidationText.Text += "Target directory is invalid or does not exist" + Environment.NewLine;
 
             if (!File.Exists(ConfigPath.Path))
-                ValidationText.Text += "Repository configuration file does not exist" + Environment.NewLine;
+                ValidationText.Text += "Repository configuration file is invalid or does not exist" + Environment.NewLine;
 
             if (!Directory.Exists(OutputDirectory.Path))
-                ValidationText.Text += "Output directory does not exist" + Environment.NewLine;
+                ValidationText.Text += "Output directory is invalid or does not exist" + Environment.NewLine;
 
             bool success = ValidationText.Text.Length == 0;
             ValidationText.Visibility = success ? Visibility.Collapsed : Visibility.Visible;

@@ -8,6 +8,11 @@ namespace DiffBlit.Core.Logging
     public abstract class LoggerBase : ILogger
     {
         /// <summary>
+        /// The default logging instance used throughout the core library; should be updated by the caller early during application startup.
+        /// </summary>
+        public static ILogger CurrentInstance { get; set; } = new NullLogger();
+
+        /// <summary>
         /// Determines whether or not log messages are written.
         /// </summary>
         public abstract bool IsEnabled { get; set; }

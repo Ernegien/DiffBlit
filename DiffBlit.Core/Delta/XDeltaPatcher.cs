@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using DiffBlit.Core.Extensions;
+using DiffBlit.Core.Logging;
 
 namespace DiffBlit.Core.Delta
 {
@@ -13,16 +14,32 @@ namespace DiffBlit.Core.Delta
     /// </summary>
     public class XDeltaPatcher : IPatcher
     {
-        private static string BinaryName = "xdelta3.exe";
-        private static readonly string TempDirectory = Path.GetTempPath();
-        private static readonly string BinaryPath = Path.Combine(TempDirectory, BinaryName);
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly string BinaryPath = Path.Combine(Path.GetTempPath(), "xdelta3.exe");
 
         /// <summary>
         /// TODO: description
         /// </summary>
         public XDeltaPatcher()
         {
-            Assembly.GetExecutingAssembly().ExtractEmbeddedResource(TempDirectory, "DiffBlit.Core.Resources", "xdelta3.exe");
+            try
+            {
+                if (!File.Exists(BinaryPath))
+                {
+                    Logger.Info("Extracting XDelta resource");
+                    Assembly.GetExecutingAssembly().ExtractEmbeddedResource("DiffBlit.Core.Resources.xdelta3.exe", BinaryPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "XDelta resource extraction failed");
+            }
         }
 
         /// <summary>
@@ -33,6 +50,8 @@ namespace DiffBlit.Core.Delta
         /// <param name="deltaPath"></param>
         public void Create(string sourcePath, string targetPath, string deltaPath)
         {
+            Logger.Info("Creating XDelta patch at {0} from {1} to {2}", deltaPath, sourcePath, targetPath);
+
             ProcessStartInfo info = new ProcessStartInfo(BinaryPath, 
                 $"-e -f -A= -s \"{sourcePath}\" \"{targetPath}\" \"{deltaPath}\"");
             info.CreateNoWindow = true;
@@ -55,6 +74,8 @@ namespace DiffBlit.Core.Delta
         /// <param name="targetPath"></param>
         public void Apply(string sourcePath, string deltaPath, string targetPath)
         {
+            Logger.Info("Applying XDelta patch {0} against {1} to {2}", deltaPath, sourcePath, targetPath);
+
             ProcessStartInfo info = new ProcessStartInfo(BinaryPath,
                 $"-d -f -s \"{sourcePath}\" \"{deltaPath}\" \"{targetPath}\"");
             info.CreateNoWindow = true;

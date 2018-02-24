@@ -3,14 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DiffBlitter.Windows"
         mc:Ignorable="d"
-        Title="DiffBlitter" Height="208.368" Width="306.572" WindowStyle="ToolWindow" ResizeMode="NoResize" Closed="Window_Closed">
+        Title="DiffBlitter" SizeToContent="WidthAndHeight" WindowStyle="ToolWindow" ResizeMode="NoResize" Closed="Window_Closed">
 	<Grid>
 		<DockPanel>
 			<Menu DockPanel.Dock="Top">
 				<MenuItem Header="_File">
-					<MenuItem Header="_Settings" Click="MenuItem_Click"></MenuItem>
+					<!--<MenuItem Header="_Settings" Click="MenuItem_Click"></MenuItem>-->
 					<MenuItem Header="_Exit" Click="MenuItem_Click"></MenuItem>
 				</MenuItem>
 				<MenuItem Header="_Tools">
@@ -29,14 +28,55 @@
 				</StatusBarItem>
 			</StatusBar>
 			<StackPanel>
-				<UniformGrid Columns="2">
+				<GroupBox Header="Source Information" Margin="5, 0, 5, 0" Padding="3">
+					<StackPanel Margin="5">
+						<StackPanel Orientation="Horizontal" Margin="0, 0, 0, 7">
+							<StackPanel Margin="0, 0, 10, 0">
+								<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Version</TextBlock>
+								<TextBox Name="SourceVersion" Width="100" HorizontalAlignment="Left" Text="Unknown" IsEnabled="False"></TextBox>
+							</StackPanel>
+							<StackPanel>
+								<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Name</TextBlock>
+								<TextBox Name="SourceName" Width="240" HorizontalAlignment="Left" Text="Unknown" IsEnabled="False"></TextBox>
+							</StackPanel>
+						</StackPanel>
+						<StackPanel Margin="0, 0, 0, 7">
+							<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Description</TextBlock>
+							<TextBox Name="SourceDescription" Height="40" HorizontalAlignment="Stretch" AcceptsReturn="True" TextWrapping="Wrap" Text="Unknown" IsEnabled="False"></TextBox>
+						</StackPanel>
+					</StackPanel>
+				</GroupBox>
+				<GroupBox Header="Target Information" Margin="5, 0, 5, 0" Padding="3">
+					<StackPanel Margin="5">
+						<StackPanel Orientation="Horizontal" Margin="0, 0, 0, 7">
+							<StackPanel Margin="0, 0, 10, 0">
+								<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Version</TextBlock>
+								<ComboBox Name="TargetVersion" Height="18" Width="100" IsEnabled="False" IsReadOnly="True" SelectionChanged="TargetVersion_SelectionChanged" Text="Please Select" Padding="4, 0, 0, 0"></ComboBox>
+							</StackPanel>
+							<StackPanel>
+								<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Name</TextBlock>
+								<TextBox Name="TargetName" Width="240" HorizontalAlignment="Left" Text="Unknown" IsEnabled="False"></TextBox>
+							</StackPanel>
+						</StackPanel>
+						<StackPanel Margin="0, 0, 0, 7">
+							<TextBlock VerticalAlignment="Center" Padding="0, 0, 0, 3">Description</TextBlock>
+							<TextBox Name="TargetDescription" Height="40" HorizontalAlignment="Stretch" AcceptsReturn="True" TextWrapping="Wrap" Text="Unknown" IsEnabled="False"></TextBox>
+						</StackPanel>
+					</StackPanel>
+				</GroupBox>
+
+				<!--<Label Name="DetectedVersion" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="0">Processing...</Label>-->
+
+
+				<!-- TODO: source and target info (version, name, description), package type (for alpha, beta, dev, release etc.) as filter for target ddl -->
+				<!--<UniformGrid Columns="2">
 					<GroupBox Header="Detected Version" Margin="10, 5, 5, 0">
-						<Label Name="DetectedVersion" VerticalAlignment="Center">Processing...</Label>
+						
 					</GroupBox>
 					<GroupBox Header="Target Version" Margin="5, 5, 10, 0">
 						<ComboBox Name="TargetVersion" Margin="5" IsEnabled="False" IsReadOnly="True" SelectionChanged="TargetVersion_SelectionChanged"></ComboBox>
 					</GroupBox>
-				</UniformGrid>
+				</UniformGrid>-->
 
 				<Button Name="Patch" Margin="10" Height="40" IsEnabled="False" Click="Patch_Click">Update</Button>
 			</StackPanel>

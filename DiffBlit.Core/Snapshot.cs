@@ -2,15 +2,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DiffBlit.Core.Extensions;
+using DiffBlit.Core.Logging;
 using DiffBlit.Core.Utilities;
 using Newtonsoft.Json;
 
-namespace DiffBlit.Core.Config
+namespace DiffBlit.Core
 {
     /// <summary>
     /// TODO: description
@@ -18,6 +20,12 @@ namespace DiffBlit.Core.Config
     [JsonObject(MemberSerialization.OptOut, IsReference = true)]
     public class Snapshot : IEquatable<Snapshot>
     {
+        /// <summary>
+        /// The current logging instance which may be null until defined by the caller.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private ILogger Logger => LoggerBase.CurrentInstance;
+
         /// <summary>
         /// TODO: description
         /// </summary>
@@ -92,6 +100,7 @@ namespace DiffBlit.Core.Config
             long hashedBytes = 0;
             long totalBytes = files.Sum(file => file.Length);
 
+            // TODO: process from biggest to smallest
             // add all files to the snapshot manifest
             Parallel.ForEach(files, file =>
             {
@@ -109,6 +118,8 @@ namespace DiffBlit.Core.Config
                             int progressPercentage = (int)(hashedBytes / (float)totalBytes * 100);
                             progressHandler.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus ?? defaultProgressStatus));
                         });
+
+                    Logger?.Debug("Computed hash for {0} of {1}", file, hash.ToBase64());
 
                     // ensure the add is thread safe
                     lock (((ICollection)Files).SyncRoot)
@@ -132,8 +143,8 @@ namespace DiffBlit.Core.Config
             //    Files.Add(new FileInformation(relativePath));
             //}
 
-            // order files by path name
-            //Files = Files.OrderBy(p => p.Path.Name).ToList();
+            //  order files by path name
+            Files = Files.OrderBy(p => p.Path.Name).ToList();
         }
 
         /// <summary>
@@ -143,6 +154,7 @@ namespace DiffBlit.Core.Config
         /// <returns></returns>
         public bool Contains(Snapshot other)
         {
+            // TODO: log differences between the two
             return other.Files.All(file => Files.Contains(file));
         }
 
@@ -151,7 +163,7 @@ namespace DiffBlit.Core.Config
         /// </summary>
         /// <param name="hash"></param>
         /// <returns>Returns the list of files found.</returns>
-        public List<FileInformation> FindFileFromHash(byte[] hash)
+        public List<FileInformation> FindFilesFromHash(byte[] hash)
         {
             return Files.FindAll(file => file.Hash.IsEqual(hash));
         }
