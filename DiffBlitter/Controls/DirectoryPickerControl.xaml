@@ -9,7 +9,7 @@
 
 		<DockPanel>
 			<Button Name="Browse" DockPanel.Dock="Right" Content="Browse..." Margin="5, 0, 0, 0" Click="BrowseClick" />
-			<TextBox Name="Directory" Width="Auto" TextChanged="DirectoryChange"/>
+			<TextBox Name="Directory" TextChanged="DirectoryChange"/>
 		</DockPanel>
 
 </UserControl>

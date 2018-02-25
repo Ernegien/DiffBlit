@@ -8,6 +8,6 @@
              d:DesignHeight="30" d:DesignWidth="400">
 	<DockPanel>
 		<Button Name="Browse" DockPanel.Dock="Right" Content="Browse..." Margin="5, 0, 0, 0" Click="BrowseClick" />
-		<TextBox Name="File" Width="Auto" TextChanged="PathChange"/>
+		<TextBox Name="File" TextChanged="PathChange"/>
 	</DockPanel>
 </UserControl>

@@ -17,8 +17,10 @@ using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core
 {
+    // TODO: add logging
+
     /// <summary>
-    /// TODO: description
+    /// Contains the information necessary to translate between snapshots, plus any additional actions added to account for dynamic content such as configuration data.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     public class Package
@@ -202,7 +204,7 @@ namespace DiffBlit.Core
         }
 
         /// <summary>
-        /// Generates package content differentials between the source and target snapshots in the specified output path.
+        /// Generates package content differentials between the source and target snapshots in the specified output path. Note that additional package modifications may be required afterwards to account for content not included in the snapshots.
         /// </summary>
         /// <param name="repo">The initial repository configuration.</param>
         /// <param name="sourcePath">The absolute local source content path.</param>
@@ -421,7 +423,7 @@ namespace DiffBlit.Core
 
                     // propagate current progress upstream
                     int count = Interlocked.Increment(ref processedCount);
-                    int progressPercentage = (int)(count / (float)processedCount * 100);
+                    int progressPercentage = (int)(count / (float)targetSnapshot.Files.Count * 100);
                     progressHandler?.Invoke(this, new ProgressChangedEventArgs(progressPercentage, progressStatus));
                 });
                 

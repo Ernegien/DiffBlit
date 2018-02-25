@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 namespace DiffBlit.Core
 {
     /// <summary>
-    /// TODO: description
+    /// Contains a list of all static file content.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut, IsReference = true)]
     public class Snapshot : IEquatable<Snapshot>

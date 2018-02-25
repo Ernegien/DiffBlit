@@ -21,7 +21,7 @@
 			</Menu>
 			<StatusBar DockPanel.Dock="Bottom" Height="28">
 				<StatusBarItem DockPanel.Dock="Right">
-					<ProgressBar Name="Progress" Width="100" Height="15" Value="100" DockPanel.Dock="Right"></ProgressBar>
+					<ProgressBar Name="Progress" Width="150" Height="15" Value="100" DockPanel.Dock="Right"></ProgressBar>
 				</StatusBarItem>
 				<StatusBarItem>
 					<Label Name="Status" Padding="0">Idle</Label>
@@ -64,20 +64,6 @@
 						</StackPanel>
 					</StackPanel>
 				</GroupBox>
-
-				<!--<Label Name="DetectedVersion" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="0">Processing...</Label>-->
-
-
-				<!-- TODO: source and target info (version, name, description), package type (for alpha, beta, dev, release etc.) as filter for target ddl -->
-				<!--<UniformGrid Columns="2">
-					<GroupBox Header="Detected Version" Margin="10, 5, 5, 0">
-						
-					</GroupBox>
-					<GroupBox Header="Target Version" Margin="5, 5, 10, 0">
-						<ComboBox Name="TargetVersion" Margin="5" IsEnabled="False" IsReadOnly="True" SelectionChanged="TargetVersion_SelectionChanged"></ComboBox>
-					</GroupBox>
-				</UniformGrid>-->
-
 				<Button Name="Patch" Margin="10" Height="40" IsEnabled="False" Click="Patch_Click">Update</Button>
 			</StackPanel>
 		</DockPanel>

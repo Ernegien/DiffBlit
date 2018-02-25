@@ -61,7 +61,14 @@ namespace DiffBlit.Core.Actions
                 if (TargetPath.IsDirectory)
                 {
                     Logger.Info("Deleting directory {0}", path);
-                    Directory.Delete(path);
+                    if (Directory.Exists(path))
+                    {
+                        Directory.Delete(path, true);
+                    }
+                    else
+                    {
+                        Logger.Info("Directory {0} does not exist", path);
+                    }
                 }
                 else
                 {

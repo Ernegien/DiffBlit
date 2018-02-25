@@ -364,7 +364,6 @@ namespace DiffBlitter.Windows
                 string targetName = null, targetVersion = null, targetDescription = null, targetDirectory = null;
                 string repoPath = null, packagePath = null;
 
-                //string sourceDirectory = null, targetDirectory = null, packageDirectory = null, repoConfigPath = null, sourceSnapshotName = null, targetSnapshotName = null;
                 Dispatcher.Invoke(() =>
                 {
                     PackageSettingsWindow packageSettings = new PackageSettingsWindow();
@@ -395,7 +394,7 @@ namespace DiffBlitter.Windows
 
                 // generate package content
                 Logger?.Info("Generating package content");
-                var package = new Package(repo, sourceDirectory, targetDirectory, packagePath, null, WorkerOnProgressChanged, "Generating package");
+                var package = new Package(repo, sourceDirectory + "\\", targetDirectory + "\\", packagePath + "\\", null, WorkerOnProgressChanged, "Generating package");
                 package.Name = "Package Name Goes Here"; // TODO: package name and description
 
                 // update the source snapshot info
@@ -602,7 +601,6 @@ namespace DiffBlitter.Windows
         /// <returns></returns>
         private bool TryEnterTask()
         {
-            // TODO: bugfix (other failed tasks still call exit task and reset the state)
             // lock attempt which returns success
             bool hasPermission = Interlocked.CompareExchange(ref _taskRunState, 1, 0) == 0;
 
