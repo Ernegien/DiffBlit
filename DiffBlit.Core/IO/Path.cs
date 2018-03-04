@@ -107,7 +107,12 @@ namespace DiffBlit.Core.IO
         }
 
         // TODO: cleanup
-        // TODO: assume first is a directory and auto-append path separator?
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="first">This is assumed to be a directory path.</param>
+        /// <param name="second">This can be a relative file or directory path.</param>
+        /// <returns></returns>
         public static Path Combine(Path first, Path second)
         {
             if (first == null)
@@ -115,9 +120,6 @@ namespace DiffBlit.Core.IO
 
             if (second == null)
                 throw new ArgumentNullException(nameof(second));
-
-            if (!first.IsDirectory)
-                throw new NotSupportedException("The first path must be a directory.");
 
             if (second.IsAbsolute)
                 throw new NotSupportedException("The second path must be relative.");
@@ -128,14 +130,22 @@ namespace DiffBlit.Core.IO
             }
 
             // TODO: cleanup
+            string path = first.Name;
             if (first.Uri.Scheme == Uri.UriSchemeHttp || first.Uri.Scheme == Uri.UriSchemeHttps ||
                      first.Uri.Scheme == Uri.UriSchemeFtp)
             {
-                return new Path(first.Name + second.Name.TrimStart('\\', '/'));
+                if (!path.EndsWith("\\") && !path.EndsWith("/"))
+                {
+                    path += "/";
+                }
+
+                return new Path(path + second.Name.TrimStart('\\', '/'), first.CaseSensitive);
             }
 
             throw new NotSupportedException();
         }
+
+        // TODO: normalize - collapse multiple separators into one, use same separator depending on URI type
 
         public static Path GetDirectoryName(Path path)
         {

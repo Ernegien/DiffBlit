@@ -7,8 +7,10 @@ using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Actions
 {
+    // TODO: better support for remote paths which will optionally require credentials to be specified in the context
+
     /// <summary>
-    /// TODO: description
+    /// Adds a file or directory to the specified target path.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     public class AddAction : IAction
@@ -20,16 +22,28 @@ namespace DiffBlit.Core.Actions
         private ILogger Logger => LoggerBase.CurrentInstance;
 
         /// <summary>
-        /// TODO: description
+        /// The local target path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path TargetPath { get; set; }
 
         /// <summary>
-        /// TODO: description
+        /// The optional source file content.
         /// </summary>
         [JsonProperty(Required = Required.Default)]
-        public Content Content { get; private set; }
+        public Content Content { get; set; }
+
+        /// <summary>
+        /// Allows overwriting the target file if true.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Overwrite { get; set; }
+
+        /// <summary>
+        /// Throws an exception upon failure if false, otherwise indicates the action is not required for successful package application.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Optional { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -37,53 +51,66 @@ namespace DiffBlit.Core.Actions
         [JsonConstructor]
         private AddAction()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        public AddAction(Path targetPath, Content content)
+        /// <param name="targetPath"></param>
+        /// <param name="content"></param>
+        /// <param name="overwrite"></param>
+        /// <param name="optional"></param>
+        public AddAction(Path targetPath, Content content = null, bool overwrite = false, bool optional = false)
         {
-            TargetPath = targetPath;
+            TargetPath = targetPath ?? throw new ArgumentNullException(nameof(targetPath));
             Content = content;
+            Overwrite = overwrite;
+            Optional = optional;
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="context"></param>
-        public void Run(ActionContext context)
+        public void Run(ActionContext context = null)
         {
+            if (!TargetPath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the TargetPath is relative.", nameof(context));
+
+            if (Content != null && context?.ContentBasePath == null)
+                throw new ArgumentException("The context ContentBasePath must be specified when working with Content.", nameof(context));
+
             try
             {
-                Path path = Path.Combine(context.BasePath, TargetPath);
+                // get the absolute path, rooted off of the context base path if necessary
+                Path path = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
+                Logger.Info("Adding {0}", path);
+
                 if (path.IsDirectory)
                 {
-                    Logger.Info("Creating directory {0}", path);
-                    Directory.CreateDirectory(path);
+                    Directory.CreateDirectory(path);   // TODO: support for remote paths
                 }
-                else 
+                else if (File.Exists(path) && !Overwrite)
                 {
-                    Logger.Info("Creating file {0}", path);
-
-                    if (Content != null)
-                    {
-                        Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), path);
-                    }
-                    else File.Create(path).Dispose();
+                    throw new IOException("File already exists and cannot be overwritten.");
+                }
+                else if (Content != null)
+                {
+                    // TODO: remove trailing slash requirement for caller, handle that internally
+                    Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), path, Overwrite);    // TODO: specify remote content path format as part of context
+                }
+                else
+                {
+                    // create an empty file
+                    File.Create(path).Dispose();   // TODO: support for remote paths
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                // HACK: WPF apps load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing deletion
-                if (TargetPath.ToString().EndsWith("d3dcompiler_47.dll", StringComparison.OrdinalIgnoreCase))
-                {
-                    Logger.Warn(ex, "Please disregard for now");
-                    return;
-                }
-
-                throw;
+                // swallow the exception if optional
+                if (!Optional)
+                    throw;
             }
         }
     }

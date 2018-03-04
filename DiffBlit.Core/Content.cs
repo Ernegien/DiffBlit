@@ -110,7 +110,8 @@ namespace DiffBlit.Core
         /// </summary>
         /// <param name="sourceDirectory">The directory which contains the content file(s).</param>
         /// <param name="outputFilePath">The path of the file to be created.</param>
-        public void Save(Path sourceDirectory, Path outputFilePath)
+        /// <param name="overwrite">Indicates whether or not overwriting an existing file is supported.</param>
+        public void Save(Path sourceDirectory, Path outputFilePath, bool overwrite = false)
         {
             if (!Directory.Exists(sourceDirectory))
                 throw new DirectoryNotFoundException("Invalid source directory.");
@@ -120,6 +121,9 @@ namespace DiffBlit.Core
 
             if (Parts.Count == 0)
                 throw new InvalidOperationException();
+
+            if (File.Exists(outputFilePath) && !overwrite)
+                throw new IOException("Unable to overwrite file.");
 
             // make sure output directory exists
             Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));

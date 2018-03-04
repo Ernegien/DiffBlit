@@ -9,8 +9,10 @@ using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Actions
 {
+    // TODO: better support for remote paths which will optionally require credentials to be specified in the context
+
     /// <summary>
-    /// TODO: description
+    /// Patches the source file against patch content saving to the target path.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     public class PatchAction : IAction
@@ -22,28 +24,40 @@ namespace DiffBlit.Core.Actions
         private ILogger Logger => LoggerBase.CurrentInstance;
 
         /// <summary>
-        /// TODO: description
+        /// The source file path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path SourcePath { get; set; }
 
         /// <summary>
-        /// TODO: description
+        /// The target file path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path TargetPath { get; set; }
 
         /// <summary>
-        /// TODO: description
+        /// The patch algorithm used.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public PatchAlgorithmType Algorithm { get; set; }
 
         /// <summary>
-        /// TODO: description
+        /// The patch content.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Content Content { get; private set; }
+
+        /// <summary>
+        /// Allows overwriting the target file if true.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Overwrite { get; set; }
+
+        /// <summary>
+        /// Throws an exception upon failure if false, otherwise indicates the action is not required for successful package application.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Optional { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -51,7 +65,7 @@ namespace DiffBlit.Core.Actions
         [JsonConstructor]
         private PatchAction()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
@@ -61,60 +75,67 @@ namespace DiffBlit.Core.Actions
         /// <param name="targetPath"></param>
         /// <param name="algorithm"></param>
         /// <param name="content"></param>
-        public PatchAction(Path sourcePath, Path targetPath, PatchAlgorithmType algorithm, Content content)
+        /// <param name="overwrite"></param>
+        /// <param name="optional"></param>
+        public PatchAction(Path sourcePath, Path targetPath, PatchAlgorithmType algorithm, Content content, bool overwrite = true, bool optional = false)
         {
-            SourcePath = sourcePath;
-            TargetPath = targetPath;
+            SourcePath = sourcePath ?? throw new ArgumentException(nameof(sourcePath));
+            TargetPath = targetPath ?? throw new ArgumentException(nameof(targetPath));
             Algorithm = algorithm;
-            Content = content;
+            Content = content ?? throw new ArgumentException(nameof(content));
+            Overwrite = overwrite;
+            Optional = optional;
         }
 
+        /// <summary>
+        /// TODO: description
+        /// </summary>
+        /// <param name="context"></param>
         public void Run(ActionContext context)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
+            if (!SourcePath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the SourcePath is relative.", nameof(context));
 
-            // TODO: optional if SourcePath & TargetPath is absolute
-            if (context.BasePath == null)
-                throw new NullReferenceException("Base path must be specified.");
+            if (!TargetPath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the TargetPath is relative.", nameof(context));
 
-            // TODO: optional if Content paths are all absolute
-            if (context.ContentBasePath == null)
-                throw new NullReferenceException("Content base path must be specified.");
-            
-            if (SourcePath == null)
-                throw new NullReferenceException("Source path must be specified.");
+            if (Content != null && context?.ContentBasePath == null)
+                throw new ArgumentException("The context ContentBasePath must be specified when working with Content.", nameof(context));
 
-            if (TargetPath == null)
-                throw new NullReferenceException("Target path must be specified.");
-
-            if (Content == null)
-                throw new NullReferenceException("Content must be specified.");
-
-            // TODO: if absolute paths are specified, don't combine with context base info
-            Path sourcePath = Path.Combine(context.BasePath, SourcePath);
-            Path targetPath = Path.Combine(context.BasePath, TargetPath);
+            if (SourcePath.IsDirectory || TargetPath.IsDirectory)
+                throw new NotSupportedException("Both the source and target paths must be files.");
 
             string tempPatchPath = Utility.GetTempFilePath();
             string tempTargetCopyPath = Utility.GetTempFilePath();
 
             try
             {
-                // write the patch file to a temp location
-                Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), tempPatchPath);
+                // get the absolute paths, rooted off of the context base path if necessary
+                Path sourcePath = SourcePath.IsAbsolute ? SourcePath : Path.Combine(context.BasePath, SourcePath);
+                Path targetPath = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
 
                 IPatcher patcher = Utility.GetPatcher(Algorithm);
 
-                // if source and target paths are the same, copy source to temp location to patch against
+                // write the patch file to a temp location
+                Content.Save(Path.Combine(context.ContentBasePath, Content.Id + "\\"), tempPatchPath,
+                    Overwrite); // TODO: specify remote content path format as part of context
+
+                // if source and target paths are the same, copy source to temp location first to patch against
                 if (SourcePath.Equals(TargetPath))
                 {
-                    File.Copy(sourcePath, tempTargetCopyPath);
-                    patcher.Apply(tempTargetCopyPath, tempPatchPath, targetPath);
+                    File.Copy(sourcePath, tempTargetCopyPath); // TODO: support for remote paths
+                    patcher.Apply(tempTargetCopyPath, tempPatchPath, targetPath); // TODO: support for remote paths
                 }
                 else
                 {
-                    patcher.Apply(sourcePath, tempPatchPath, targetPath);
+                    patcher.Apply(sourcePath, tempPatchPath, targetPath); // TODO: support for remote paths
                 }
+            }
+            catch
+            {
+                // swallow the exception if optional
+                if (!Optional)
+                    throw;
             }
             finally
             {

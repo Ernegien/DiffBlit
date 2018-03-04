@@ -56,12 +56,8 @@ namespace DiffBlitter.Windows
             ? AppDomain.CurrentDomain.BaseDirectory
             : Config.ContentPath;
 
-        private readonly BackgroundWorker _detectionWorker;
-        private readonly BackgroundWorker _patchWorker;
-        private readonly BackgroundWorker _snapshotWorker;
-        private readonly BackgroundWorker _packageWorker;
-        private readonly BackgroundWorker _updateWorker;
- 
+        private readonly BackgroundWorker _detectionWorker, _patchWorker, _snapshotWorker, _packageWorker, _updateWorker;
+
         // TODO: subscribe all workers to this and cancel upon app close?
         // CancellationTokenSource cancellation;
 
@@ -123,6 +119,15 @@ namespace DiffBlitter.Windows
                 Logger?.Info("Version detection started");
 
                 _detectedSnapshot = null;
+
+                // avoids hashing your entire computer because you decided to run this at the root of your C drive and not configure the ContentPath in the app.config
+                string requiredFilePath = Path.Combine(_contentPath + "\\", Config.FileMustExist);
+                if (!string.IsNullOrWhiteSpace(Config.FileMustExist) &&
+                    !File.Exists(requiredFilePath))
+                {
+                    Logger?.Warn("{0} not found", requiredFilePath);
+                    return;
+                }
 
                 // determine current version quickly via a targeted file check if possible
                 if (!string.IsNullOrWhiteSpace(Config.VersionFilePath))

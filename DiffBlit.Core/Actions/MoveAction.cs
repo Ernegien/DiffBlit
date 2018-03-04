@@ -7,8 +7,11 @@ using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Actions
 {
+    // TODO: better support for remote paths which will optionally require credentials to be specified in the context
+    // TODO: copy to target and delete from source when working with remote paths
+
     /// <summary>
-    /// TODO: description
+    /// Moves the source file or directory to the target path.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     public class MoveAction : IAction
@@ -20,16 +23,28 @@ namespace DiffBlit.Core.Actions
         private ILogger Logger => LoggerBase.CurrentInstance;
 
         /// <summary>
-        /// TODO: description
+        /// The source file or directory path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path SourcePath { get; set; }
 
         /// <summary>
-        /// TODO: description
+        /// The target file or directory path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path TargetPath { get; set; }
+
+        /// <summary>
+        /// Allows overwriting the target file if true.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Overwrite { get; set; }
+
+        /// <summary>
+        /// Throws an exception upon failure if false, otherwise indicates the action is not required for successful package application.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Optional { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -37,43 +52,63 @@ namespace DiffBlit.Core.Actions
         [JsonConstructor]
         private MoveAction()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
-        /// <param name="sourcePath"></param>
-        /// <param name="targetPath"></param>
-        public MoveAction(Path sourcePath, Path targetPath)
+        public MoveAction(Path sourcePath, Path targetPath, bool overwrite = false, bool optional = false)
         {
-            SourcePath = sourcePath;
-            TargetPath = targetPath;
+            SourcePath = sourcePath ?? throw new ArgumentException(nameof(sourcePath));
+            TargetPath = targetPath ?? throw new ArgumentException(nameof(targetPath));
+            Overwrite = overwrite;
+            Optional = optional;
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="context"></param>
-        public void Run(ActionContext context)
+        public void Run(ActionContext context = null)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
+            if (!SourcePath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the SourcePath is relative.", nameof(context));
 
-            if (context.BasePath == null)
-                throw new NullReferenceException("The base path must be specified.");
+            if (!TargetPath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the TargetPath is relative.", nameof(context));
 
             if (SourcePath.Equals(TargetPath))
-                throw new NotSupportedException("Are you sure about that?");
+                throw new NotSupportedException("The SourcePath cannot equal the TargetPath.");
 
-            Path sourcePath = Path.Combine(context.BasePath, SourcePath);
-            Path targetPath = Path.Combine(context.BasePath, TargetPath);
+            if (SourcePath.IsDirectory != TargetPath.IsDirectory)
+                throw new NotSupportedException("Both the source and target paths must be of the same type.");
 
-            // ensure that target directory path exists
-            Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
+            try
+            {
+                // get the absolute paths, rooted off of the context base path if necessary
+                Path sourcePath = SourcePath.IsAbsolute ? SourcePath : Path.Combine(context.BasePath, SourcePath);
+                Path targetPath = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
 
-            Logger.Info("Moving {0} to {1}", sourcePath, targetPath);
-            File.Move(sourcePath, targetPath);
+                // ensure that target directory path exists
+                Directory.CreateDirectory(Path.GetDirectoryName(targetPath));   // TODO: support for remote paths
+
+                Logger.Info("Moving {0} to {1}", sourcePath, targetPath);
+                if (SourcePath.IsDirectory)
+                {
+                    Directory.Move(sourcePath, targetPath);   // TODO: support for remote paths
+                }
+                else
+                {
+                    File.Move(sourcePath, targetPath);   // TODO: support for remote paths
+                }
+            }
+            catch
+            {
+                // swallow the exception if optional
+                if (!Optional)
+                    throw;
+            }
         }
     }
 }

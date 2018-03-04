@@ -15,12 +15,18 @@ namespace DiffBlit.Core.Actions
         public Path TargetPath { get; set; }
 
         /// <summary>
+        /// Throws an exception upon failure if false, otherwise indicates the action is not required for successful package application.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Optional { get; set; }
+
+        /// <summary>
         /// TODO: description
         /// </summary>
         [JsonConstructor]
-        private NoAction()
+        private NoAction(bool optional = true)
         {
-            
+            Optional = optional;
         }
 
         /// <summary>
@@ -32,7 +38,7 @@ namespace DiffBlit.Core.Actions
             TargetPath = targetPath;
         }
 
-        public void Run(ActionContext context)
+        public void Run(ActionContext context = null)
         {
             // do nothing
         }

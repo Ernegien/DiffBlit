@@ -7,8 +7,10 @@ using Path = DiffBlit.Core.IO.Path;
 
 namespace DiffBlit.Core.Actions
 {
+    // TODO: better support for remote paths which will optionally require credentials to be specified in the context
+
     /// <summary>
-    /// TODO: description
+    /// Removes the target file or directory.
     /// </summary>
     [JsonObject(MemberSerialization.OptOut)]
     public class RemoveAction : IAction
@@ -20,10 +22,16 @@ namespace DiffBlit.Core.Actions
         private ILogger Logger => LoggerBase.CurrentInstance;
 
         /// <summary>
-        /// TODO: description
+        /// The target file or directory path.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public Path TargetPath { get; set; }
+
+        /// <summary>
+        /// Throws an exception upon failure if false, otherwise indicates the action is not required for successful package application.
+        /// </summary>
+        [JsonProperty(Required = Required.Default)]
+        public bool Optional { get; set; }
 
         /// <summary>
         /// TODO: description
@@ -31,61 +39,49 @@ namespace DiffBlit.Core.Actions
         [JsonConstructor]
         private RemoveAction()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="targetPath"></param>
-        public RemoveAction(string targetPath)
+        /// <param name="optional"></param>
+        public RemoveAction(Path targetPath, bool optional = false)
         {
-            TargetPath = targetPath;
+            TargetPath = targetPath ?? throw new ArgumentException(nameof(targetPath));
+            Optional = optional;
         }
 
         /// <summary>
         /// TODO: description
         /// </summary>
         /// <param name="context"></param>
-        public void Run(ActionContext context)
+        public void Run(ActionContext context = null)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-
-            if (context.BasePath == null)
-                throw new NullReferenceException("The base path must be specified.");
+            if (!TargetPath.IsAbsolute && context?.BasePath == null)
+                throw new ArgumentException("The context BasePath must be specified when the TargetPath is relative.", nameof(context));
 
             try
             {
-                string path = Path.Combine(context.BasePath, TargetPath);
+                // get the absolute path, rooted off of the context base path if necessary
+                Path path = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
+                Logger.Info("Deleting {0}", path);
+
                 if (TargetPath.IsDirectory)
                 {
-                    Logger.Info("Deleting directory {0}", path);
-                    if (Directory.Exists(path))
-                    {
-                        Directory.Delete(path, true);
-                    }
-                    else
-                    {
-                        Logger.Info("Directory {0} does not exist", path);
-                    }
+                    Directory.Delete(path, true);   // TODO: support for remote paths
                 }
                 else
                 {
-                    Logger.Info("Deleting file {0}", path);
-                    File.Delete(path);
+                    File.Delete(path);   // TODO: support for remote paths
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                // HACK: WPF apps load d3dcompiler_47 from current directory instead of from %windir%\system32\ preventing deletion
-                if (TargetPath.ToString().EndsWith("d3dcompiler_47.dll", StringComparison.OrdinalIgnoreCase))
-                {
-                    Logger.Warn(ex, "Please disregard for now");
-                    return;
-                }
-
-                throw;
+                // swallow the exception if optional
+                if (!Optional)
+                    throw;
             }
         }
     }

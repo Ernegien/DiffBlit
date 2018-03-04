@@ -61,5 +61,10 @@ namespace DiffBlitter
         /// Determines whether or not to prompt the user for permission to update itself.
         /// </summary>
         public static bool UpdaterAutoUpdate => Convert.ToBoolean(ConfigurationManager.AppSettings["UpdaterAutoUpdate"]);
+
+        /// <summary>
+        /// If specified, to be used as additional verification that the updater is targeting the right directory.
+        /// </summary>
+        public static string FileMustExist => ConfigurationManager.AppSettings["FileMustExist"];
     }
 }

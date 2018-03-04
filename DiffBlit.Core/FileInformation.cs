@@ -12,7 +12,6 @@ namespace DiffBlit.Core
     [JsonObject(MemberSerialization.OptOut, ItemIsReference = false)]
     public class FileInformation : IEquatable<FileInformation>, IEqualityComparer<FileInformation>
     {
-        // TODO: validate during set
         /// <summary>
         /// An absolute or relative path to a file or directory. Directories MUST end with a trailing slash to differentiate from extensionless files.
         /// </summary>
@@ -20,24 +19,24 @@ namespace DiffBlit.Core
         public Path Path { get; private set; }
 
         /// <summary>
-        /// TODO: description
+        /// Allows for file content validation.
         /// </summary>
         [JsonProperty(Required = Required.Default)]
         public byte[] Hash { get; private set; }
 
-        // TODO: DateTime if we wish to track that as part of file/folder differentials (ChangeDateAction)
+        // TODO: DateTime if we wish to track that as part of file/folder differentials (UpdateAttributesAction)
 
         // TODO: would be useful during validation, quick check that sizes match before scanning further
         //[JsonProperty(Required = Required.Always)]
         //public long Size => new FileInfo(Path).Length;
 
         /// <summary>
-        /// 
+        /// TODO: description
         /// </summary>
         [JsonConstructor]
         private FileInformation()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
@@ -49,6 +48,18 @@ namespace DiffBlit.Core
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Hash = hash;
+        }
+
+        public static FileInformation FromFile(Path path, byte[] hash = null)
+        {
+            // TODO: this is a more explicit way to define file information
+            throw new NotImplementedException();
+        }
+
+        public static FileInformation FromDirectory(Path path)
+        {
+            // TODO: this is a more explicit way to define file information
+            throw new NotImplementedException();
         }
 
         #region Equality

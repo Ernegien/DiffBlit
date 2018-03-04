@@ -249,10 +249,18 @@ namespace DiffBlit.Core.Tests
         [TestMethod]
         public void PathCombineTest()
         {
-            var test = Path.Combine("http://example.com/", "file");
             Assert.AreEqual(Path.Combine("http://example.com/", "file"), new Path("http://example.com/file"));
             Assert.AreEqual(Path.Combine("http://example.com/directory/", "file"), new Path("http://example.com/directory/file"));
+            Assert.AreEqual(Path.Combine("http://example.com/", "file.ext"), new Path("http://example.com/file.ext"));
+            Assert.AreEqual(Path.Combine("http://example.com/directory/", "file.ext"), new Path("http://example.com/directory/file.ext"));
 
+            // should assume first argument is a directory, even if no trailing slash is specified
+            Assert.AreEqual(Path.Combine("http://example.com", "file"), new Path("http://example.com/file"));
+            Assert.AreEqual(Path.Combine("http://example.com/directory", "file"), new Path("http://example.com/directory/file"));
+            Assert.AreEqual(Path.Combine("http://example.com", "file.ext"), new Path("http://example.com/file.ext"));
+            Assert.AreEqual(Path.Combine("http://example.com/directory", "file.ext"), new Path("http://example.com/directory/file.ext"));
+
+            // TODO: null second arg
 
         }
     }
