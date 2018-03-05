@@ -50,13 +50,13 @@ namespace DiffBlit.Core
             Hash = hash;
         }
 
-        public static FileInformation FromFile(Path path, byte[] hash = null)
+        public static FileInformation FromFile(Path path, byte[] hash = null, bool optional = false)
         {
             // TODO: this is a more explicit way to define file information
             throw new NotImplementedException();
         }
 
-        public static FileInformation FromDirectory(Path path)
+        public static FileInformation FromDirectory(Path path, bool optional = false)
         {
             // TODO: this is a more explicit way to define file information
             throw new NotImplementedException();
@@ -64,14 +64,19 @@ namespace DiffBlit.Core
 
         #region Equality
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Checks for equality. If either side's hash is null it's considered dynamic and not checked any further for equality.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
         public bool Equals(FileInformation other)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
             return Path.Equals(other.Path) &&
-                   StructuralComparisons.StructuralEqualityComparer.Equals(Hash, other.Hash);
+                   (Hash == null || other.Hash == null ||
+                    StructuralComparisons.StructuralEqualityComparer.Equals(Hash, other.Hash));
         }
 
         /// <inheritdoc />

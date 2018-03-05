@@ -96,14 +96,17 @@ namespace DiffBlit.Core.Actions
                 // ensure the target directory path exists
                 Directory.CreateDirectory(Path.GetDirectoryName(targetPath));   // TODO: support for remote paths
 
-                Logger.Info("Copying {0} to {1}", sourcePath, targetPath);
+                Logger?.Info("Copying {0} to {1}", sourcePath, targetPath);
                 File.Copy(sourcePath, targetPath, Overwrite);   // TODO: support for remote paths
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow the exception if optional
-                if (!Optional)
-                    throw;
+                // swallow the exception and log a warning if optional, otherwise propagate upwards
+                if (Optional)
+                {
+                    Logger?.Warn(ex, "Optional action failure.");
+                }
+                else throw;
             }
         }
     }

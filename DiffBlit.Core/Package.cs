@@ -102,6 +102,7 @@ namespace DiffBlit.Core
         public void Apply(Path packageDirectory, Path targetDirectory, bool validateBefore = true, bool validateAfter = true, ProgressChangedEventHandler progressHandler = null, string progressStatus = null)
         {
             // validate source content
+            if (validateBefore) Logger?.Info("Validating package source content");
             if (validateBefore && !new Snapshot(targetDirectory, progressHandler, "Validating source content").Contains(SourceSnapshot))
             {
                 throw new DataException("Directory contents do not match the source snapshot.");
@@ -151,6 +152,7 @@ namespace DiffBlit.Core
 
                 // TODO: selective file validation fed from list of changed files after patch application
                 // validate modified content
+                if (validateAfter) Logger?.Info("Validating package output content");
                 if (validateAfter && !new Snapshot(targetDirectory, progressHandler, "Validating output").Contains(TargetSnapshot))
                 {
                     throw new DataException("Directory contents do not match the target snapshot.");
@@ -158,6 +160,8 @@ namespace DiffBlit.Core
             }
             catch (Exception ex)
             {
+                Logger?.Error(ex, "Performing rollback.");
+
                 const string rollbackStepName = "Performing rollback";
                 progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, rollbackStepName));
                 processedCount = 0;
@@ -165,20 +169,19 @@ namespace DiffBlit.Core
                 // if failure is detected, delete any existing targets and restore any backups
                 foreach (var action in Actions.Where(a => !(a is NoAction)))
                 {
-                    // TODO: cleanup
+                    // log any failures encountered during the rollback, keep chugging through regardless
                     try
                     {
                         File.Delete(Path.Combine(targetDirectory, action.TargetPath));
+                        Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
+                        if (File.Exists(backupPath))
+                            File.Copy(backupPath, Path.Combine(targetDirectory, action.TargetPath), true);
                     }
                     catch (Exception e)
                     {
-                 
+                        Logger?.Warn(e, "Unknown package restore failure.");
                     }
        
-                    Path backupPath = Path.Combine(backupDirectory, action.TargetPath);
-                    if (File.Exists(backupPath))
-                        File.Copy(backupPath, Path.Combine(targetDirectory, action.TargetPath), true);
-
                     // propagate current progress upstream
                     processedCount++;
                     int progressPercentage = (int)(processedCount / (float)Actions.Count * 100);
@@ -192,6 +195,8 @@ namespace DiffBlit.Core
             {
                 Directory.Delete(backupDirectory, true);
             }
+
+            // TODO: remove empty directories or leave that up to the package actions?
         }
 
         /// <summary>
@@ -200,7 +205,7 @@ namespace DiffBlit.Core
         [JsonConstructor]
         private Package()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
@@ -327,7 +332,7 @@ namespace DiffBlit.Core
 
                 progressHandler?.Invoke(this, new ProgressChangedEventArgs(0, progressStatus));
 
-                // no good way to get regular progress callbacks from all patchers so just count files processed instead for now
+                // TODO: no good way to get regular progress callbacks from all patchers so just count files processed instead for now
                 int processedCount = 0;
 
                 Parallel.ForEach(targetSnapshot.Files, file =>
@@ -337,15 +342,15 @@ namespace DiffBlit.Core
                     bool sourcePathMatch = sourcePaths.ContainsKey(file.Path);
 
                     // only applicable for files
-                    string hash = !file.Path.IsDirectory ? BitConverter.ToString(file.Hash) : null;
-                    bool sourceHashMatch = !file.Path.IsDirectory ? sourceHashes.ContainsKey(hash) : false;
+                    string hash = !file.Path.IsDirectory && file.Hash != null ? BitConverter.ToString(file.Hash) : null;
+                    bool sourceHashMatch = !file.Path.IsDirectory && file.Hash != null ? sourceHashes.ContainsKey(hash) : false;
                     bool sourceHashSingleMatch = !file.Path.IsDirectory && (sourceHashMatch && sourceHashes[hash].Count == 1);
-                    bool targetHashSingleMatch = !file.Path.IsDirectory ? targetHashes[hash].Count == 1 : false;
+                    bool targetHashSingleMatch = !file.Path.IsDirectory && file.Hash != null ? targetHashes[hash].Count == 1 : false;
 
                     // unchanged empty directory
                     if (file.Path.IsDirectory & sourcePathMatch)
                     {
-                     
+                        // do nothing
                     }
 
                     // added empty directory
@@ -353,7 +358,18 @@ namespace DiffBlit.Core
                     {
                         lock (((ICollection)Actions).SyncRoot)
                         {
-                            Actions.Add(new AddAction(file.Path, null));
+                            Actions.Add(new AddAction(file.Path));
+                        }
+                    }
+
+                    // search for added optional files (target file with a null hash)
+                    else if (!file.Path.IsDirectory && file.Hash == null)
+                    {
+                        var content = new Content(targetFilePath, packagePath, pkgSettings);
+
+                        lock (((ICollection)Actions).SyncRoot)
+                        {
+                            Actions.Add(new AddAction(file.Path, content, false, true));
                         }
                     }
 
@@ -416,6 +432,7 @@ namespace DiffBlit.Core
                             Actions.Add(new AddAction(file.Path, content));
                         }
                     }
+
                     else
                     {
                         throw new InvalidOperationException("File action not found.");
@@ -432,7 +449,7 @@ namespace DiffBlit.Core
                 {
                     if (!targetPaths.ContainsKey(file.Path))
                     {
-                        Actions.Add(new RemoveAction(file.Path));
+                        Actions.Add(new RemoveAction(file.Path, true));
                     }
                 }
 

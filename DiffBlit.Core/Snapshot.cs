@@ -75,7 +75,7 @@ namespace DiffBlit.Core
         [JsonConstructor]
         private Snapshot()
         {
-            
+            // required for serialization
         }
 
         /// <summary>
@@ -128,9 +128,10 @@ namespace DiffBlit.Core
                         Files.Add(new FileInformation(file.FullName.Substring(directoryPath.Length).TrimStart('/', '\\'), hash));
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                    // do nothing for now
+                   Logger?.Warn(ex, "Unknown snapshot failure.");
                 }
             });
 
@@ -154,8 +155,16 @@ namespace DiffBlit.Core
         /// <returns></returns>
         public bool Contains(Snapshot other)
         {
-            // TODO: log differences between the two
-            return other.Files.All(file => Files.Contains(file));
+            foreach (var file in other.Files)
+            {
+                if (!Files.Contains(file))
+                {
+                    Logger?.Warn("Snapshot.Contains failure based on {0}", file);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -183,7 +192,7 @@ namespace DiffBlit.Core
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Files.Count == other.Files.Count && Files.All(file => other.Files.Contains(file));
+            return Files.Count == other.Files.Count && Contains(other);
         }
 
         /// <inheritdoc />

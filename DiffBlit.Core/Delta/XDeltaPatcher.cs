@@ -52,8 +52,10 @@ namespace DiffBlit.Core.Delta
         {
             Logger.Info("Creating XDelta patch at {0} from {1} to {2}", deltaPath, sourcePath, targetPath);
 
+            // TODO: make buffer size configurable (or limit based on available memory)
+            // NOTE: actual memory consumed is roughly 1.5 times the buffer size specified
             ProcessStartInfo info = new ProcessStartInfo(BinaryPath, 
-                $"-e -f -A= -s \"{sourcePath}\" \"{targetPath}\" \"{deltaPath}\"");
+                $"-B 536870912 -e -f -A= -s \"{sourcePath}\" \"{targetPath}\" \"{deltaPath}\"");
             info.CreateNoWindow = true;
             info.UseShellExecute = false;
 

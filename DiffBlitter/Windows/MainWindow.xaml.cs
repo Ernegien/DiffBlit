@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,6 +23,14 @@ namespace DiffBlitter.Windows
     public partial class MainWindow
     {
         #region Fields & Properties
+
+        /// <summary>
+        /// Loads an unmanaged library ino the current app domain.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        [DllImport("kernel32.dll", EntryPoint = "LoadLibrary", SetLastError = true)]
+        public static extern IntPtr LoadUnmanagedLibrary(string path);
 
         /// <summary>
         /// The current logging instance which may be null until defined by the caller.
@@ -74,6 +83,20 @@ namespace DiffBlitter.Windows
             LoggerBase.CurrentInstance = new SeriLogger(Config.LogLevel);
 
             InitializeComponent();
+
+            // TODO: needs more testing
+            try
+            {
+                // HACK: load this WPF dependency from the default system location instead of the current directory, otherwise it may interfere with patching if present
+                string path = @"C:\Windows\System32\D3DCompiler_47.dll";
+                Logger?.Debug("Loading unmanaged library from {0}", path);
+                if (LoadUnmanagedLibrary(path) == IntPtr.Zero)    // will automatically forward to SysWOW64 if needed
+                    throw new Win32Exception();
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn(e, "Unmanaged library load failure.");
+            }
 
             // update the title with the application version
             Title += " " + Assembly.GetExecutingAssembly().GetName().Version;
@@ -402,17 +425,17 @@ namespace DiffBlitter.Windows
                 var package = new Package(repo, sourceDirectory + "\\", targetDirectory + "\\", packagePath + "\\", null, WorkerOnProgressChanged, "Generating package");
                 package.Name = "Package Name Goes Here"; // TODO: package name and description
 
-                // update the source snapshot info
+                // update the source snapshot info (TODO: only if information doesn't already exist)
                 var sourceSnapshot = package.SourceSnapshot;
-                sourceSnapshot.Name = sourceName;
-                sourceSnapshot.Version = new Version(sourceVersion);
-                sourceSnapshot.Description = sourceDescription;
+                //sourceSnapshot.Name = sourceName;
+                //sourceSnapshot.Version = new Version(sourceVersion);
+                //sourceSnapshot.Description = sourceDescription;
 
-                // update the target snapshot info
+                // update the target snapshot info (TODO: only if information doesn't already exist)
                 var targetSnapshot = package.TargetSnapshot;
-                targetSnapshot.Name = targetName;
-                targetSnapshot.Version = new Version(targetVersion);
-                targetSnapshot.Description = targetDescription;
+                //targetSnapshot.Name = targetName;
+                //targetSnapshot.Version = new Version(targetVersion);
+                //targetSnapshot.Description = targetDescription;
 
                 // bind the new package to the repo
                 repo.Packages.Add(package);
@@ -533,10 +556,18 @@ namespace DiffBlitter.Windows
 
                     break;
                 case "_Create Package":
-                    _packageWorker.RunWorkerAsync();
+
+                    // prevent multiple instances of the same task from running
+                    if (!_packageWorker.IsBusy)
+                        _packageWorker.RunWorkerAsync();
+
                     break;
                 case "_Create Snapshot":
-                    _snapshotWorker.RunWorkerAsync();
+
+                    // prevent multiple instances of the same task from running
+                    if (!_snapshotWorker.IsBusy)
+                        _snapshotWorker.RunWorkerAsync();
+
                     break;
                 case "_About":
                     Logger?.Info("About clicked");

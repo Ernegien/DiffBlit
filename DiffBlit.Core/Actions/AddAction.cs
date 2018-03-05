@@ -85,7 +85,7 @@ namespace DiffBlit.Core.Actions
             {
                 // get the absolute path, rooted off of the context base path if necessary
                 Path path = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
-                Logger.Info("Adding {0}", path);
+                Logger?.Info("Adding {0}", path);
 
                 if (path.IsDirectory)
                 {
@@ -106,11 +106,14 @@ namespace DiffBlit.Core.Actions
                     File.Create(path).Dispose();   // TODO: support for remote paths
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow the exception if optional
-                if (!Optional)
-                    throw;
+                // swallow the exception and log a warning if optional, otherwise propagate upwards
+                if (Optional)
+                {
+                    Logger?.Warn(ex, "Optional action failure.");
+                }
+                else throw;
             }
         }
     }

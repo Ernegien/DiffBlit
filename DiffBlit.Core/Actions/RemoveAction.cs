@@ -77,11 +77,14 @@ namespace DiffBlit.Core.Actions
                     File.Delete(path);   // TODO: support for remote paths
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow the exception if optional
-                if (!Optional)
-                    throw;
+                // swallow the exception and log a warning if optional, otherwise propagate upwards
+                if (Optional)
+                {
+                    Logger.Warn(ex, "Optional action failure.");
+                }
+                else throw;
             }
         }
     }

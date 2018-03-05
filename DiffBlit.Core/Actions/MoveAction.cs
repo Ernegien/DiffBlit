@@ -93,7 +93,7 @@ namespace DiffBlit.Core.Actions
                 // ensure that target directory path exists
                 Directory.CreateDirectory(Path.GetDirectoryName(targetPath));   // TODO: support for remote paths
 
-                Logger.Info("Moving {0} to {1}", sourcePath, targetPath);
+                Logger?.Info("Moving {0} to {1}", sourcePath, targetPath);
                 if (SourcePath.IsDirectory)
                 {
                     Directory.Move(sourcePath, targetPath);   // TODO: support for remote paths
@@ -103,11 +103,14 @@ namespace DiffBlit.Core.Actions
                     File.Move(sourcePath, targetPath);   // TODO: support for remote paths
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow the exception if optional
-                if (!Optional)
-                    throw;
+                // swallow the exception and log a warning if optional, otherwise propagate upwards
+                if (Optional)
+                {
+                    Logger?.Warn(ex, "Optional action failure.");
+                }
+                else throw;
             }
         }
     }

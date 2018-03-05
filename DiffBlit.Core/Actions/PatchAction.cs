@@ -113,6 +113,7 @@ namespace DiffBlit.Core.Actions
                 // get the absolute paths, rooted off of the context base path if necessary
                 Path sourcePath = SourcePath.IsAbsolute ? SourcePath : Path.Combine(context.BasePath, SourcePath);
                 Path targetPath = TargetPath.IsAbsolute ? TargetPath : Path.Combine(context.BasePath, TargetPath);
+                Logger?.Info("Patching {0} against {1} to {2} using the {3} algorithm", sourcePath, tempPatchPath, targetPath, Algorithm);
 
                 IPatcher patcher = Utility.GetPatcher(Algorithm);
 
@@ -131,11 +132,14 @@ namespace DiffBlit.Core.Actions
                     patcher.Apply(sourcePath, tempPatchPath, targetPath); // TODO: support for remote paths
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow the exception if optional
-                if (!Optional)
-                    throw;
+                // swallow the exception and log a warning if optional, otherwise propagate upwards
+                if (Optional)
+                {
+                    Logger?.Warn(ex, "Optional action failure.");
+                }
+                else throw;
             }
             finally
             {

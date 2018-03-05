@@ -68,6 +68,8 @@ namespace DiffBlit.Core
         [JsonProperty(Required = Required.Always)]
         public List<Package> Packages { get; } = new List<Package>();
 
+        // TODO: constructors that take Uri or json string
+
         /// <summary>
         /// TODO: description
         /// </summary>
