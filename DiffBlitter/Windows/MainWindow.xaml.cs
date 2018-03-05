@@ -88,7 +88,7 @@ namespace DiffBlitter.Windows
             try
             {
                 // HACK: load this WPF dependency from the default system location instead of the current directory, otherwise it may interfere with patching if present
-                string path = @"C:\Windows\System32\D3DCompiler_47.dll";
+                string path = Path.Combine(Environment.SystemDirectory, "D3DCompiler_47.dll");
                 Logger?.Debug("Loading unmanaged library from {0}", path);
                 if (LoadUnmanagedLibrary(path) == IntPtr.Zero)    // will automatically forward to SysWOW64 if needed
                     throw new Win32Exception();
