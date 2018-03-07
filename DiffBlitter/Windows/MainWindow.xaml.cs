@@ -52,6 +52,7 @@ namespace DiffBlitter.Windows
                 {
                     Logger?.Info("Downloading package repository configuration from {0}", Config.ContentRepoUri);
                     string json = new ReadOnlyFile(Config.ContentRepoUri).ReadAllText();
+                    Logger?.Trace(json);
                     _packageRepository = Repository.Deserialize(json);
                 }
 
@@ -123,6 +124,12 @@ namespace DiffBlitter.Windows
         public void UnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             Logger?.Error(e.Exception, "Unhandled exception");
+
+            MessageBox.Show("An unhandled exception has been logged." + 
+                Environment.NewLine + Environment.NewLine + e.Exception,
+                "Hold up!", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            e.Handled = true;
         }
 
         #endregion
@@ -140,8 +147,6 @@ namespace DiffBlitter.Windows
             try
             {
                 Logger?.Info("Version detection started");
-
-                _detectedSnapshot = null;
 
                 // avoids hashing your entire computer because you decided to run this at the root of your C drive and not configure the ContentPath in the app.config
                 string requiredFilePath = Path.Combine(_contentPath + "\\", Config.FileMustExist);
@@ -180,7 +185,6 @@ namespace DiffBlitter.Windows
         private void DetectionCompletedHandler(object sender, RunWorkerCompletedEventArgs e)
         {
             UpdateDetectedSnapshot(_detectedSnapshot);
-            TargetVersion.IsEnabled = true;
             TaskCompleted(e);
         }
 
@@ -426,13 +430,13 @@ namespace DiffBlitter.Windows
                 package.Name = "Package Name Goes Here"; // TODO: package name and description
 
                 // update the source snapshot info (TODO: only if information doesn't already exist)
-                var sourceSnapshot = package.SourceSnapshot;
+                //var sourceSnapshot = package.SourceSnapshot;
                 //sourceSnapshot.Name = sourceName;
                 //sourceSnapshot.Version = new Version(sourceVersion);
                 //sourceSnapshot.Description = sourceDescription;
 
                 // update the target snapshot info (TODO: only if information doesn't already exist)
-                var targetSnapshot = package.TargetSnapshot;
+                //var targetSnapshot = package.TargetSnapshot;
                 //targetSnapshot.Name = targetName;
                 //targetSnapshot.Version = new Version(targetVersion);
                 //targetSnapshot.Description = targetDescription;
@@ -465,10 +469,12 @@ namespace DiffBlitter.Windows
             if (!TryEnterTask())
                 return;
 
+            Logger?.Info("Patch started");
+
+            var packageDirectory = Utility.GetTempDirectory();
+
             try
             {
-                Logger?.Info("Patch started");
-
                 // disable UI
                 Dispatcher.Invoke(() =>
                 {
@@ -477,53 +483,49 @@ namespace DiffBlitter.Windows
                 });
 
                 var version = e.Argument as Version;
-
+               
                 Package package = PackageRepository.FindPackage(_detectedSnapshot.Version, version);
                 Logger?.Info("Package found for source version {0} to target version {1}",
                     package.SourceSnapshot.Version, package.TargetSnapshot.Version);
 
-                var packageDirectory = Utility.GetTempDirectory();
+                // download package contents locally
+                Logger?.Info("Attempting to download package contents from {0}", Config.ContentRepoUri);
+                package.Save(Path.GetDirectoryName(Config.ContentRepoUri), packageDirectory,
+                    WorkerOnProgressChanged, "Downloading package");
 
-                try
-                {
-                    // download package contents locally
-                    Logger?.Info("Attempting to download package contents from {0}", Config.ContentRepoUri);
-                    package.Save(Path.GetDirectoryName(Config.ContentRepoUri), packageDirectory,
-                        WorkerOnProgressChanged, "Downloading package");
-
-                    // apply package
-                    Logger?.Info("Applying package");
-                    package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath,
-                        Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply, WorkerOnProgressChanged,
-                        "Applying package");
-                }
-                finally
-                {
-                    Directory.Delete(packageDirectory, true);
-                }
+                // apply package
+                Logger?.Info("Applying package");
+                package.Apply(Path.Combine(packageDirectory, package.Id + "\\"), _contentPath,
+                    Config.ValidateBeforePackageApply, Config.ValidateAfterPackageApply, WorkerOnProgressChanged,
+                    "Applying package");
 
                 // update detected version
                 _detectedSnapshot = package.TargetSnapshot;
 
-                // update the UI
-                Dispatcher.Invoke(() =>
-                {
-                    UpdateDetectedSnapshot(_detectedSnapshot);
-                });
-
                 Logger?.Info("Patch completed");
+
+                MessageBox.Show("Patch applied successfully!",
+                    "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch
+            {
+                MessageBox.Show("Patch failed! Make sure the base game files haven't been modified in any way. If unsure, please run the updater against a fresh copy.",
+                    "Hold up!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 // allow other tasks to run
                 ExitTask();
+
+                // cleanup the temp package directory
+                Directory.Delete(packageDirectory, true);
             }
         }
 
         private void PatchCompletedHandler(object sender, RunWorkerCompletedEventArgs e)
         {
-            TargetVersion.IsEnabled = true;
             TaskCompleted(e);
+            UpdateDetectedSnapshot(_detectedSnapshot);
         }
 
         #endregion
@@ -625,6 +627,13 @@ namespace DiffBlitter.Windows
             TargetVersion.DisplayMemberPath = "TargetSnapshot.Version";
             TargetVersion.SelectedValuePath = "TargetSnapshot";
             TargetVersion.SelectedIndex = 0;
+            TargetVersion.IsEnabled = TargetVersion.Items.Count > 0;
+
+            if (_detectedSnapshot == null)
+            {
+                MessageBox.Show("Failed to detect current version. Please re-install the game from a fresh copy and run the updater again afterwards.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
