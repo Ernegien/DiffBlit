@@ -8,9 +8,9 @@ namespace DiffBlit.Core
     public class PackageSettings : ICloneable
     {
         /// <summary>
-        /// The maximum cacheable file size supported by Cloudflare's free tier.
+        /// A reasonable 50MB size to break file content down into.
         /// </summary>
-        public const int DefaultContentPartSize = 1024 * 1024 * 512;
+        public const int DefaultContentPartSize = 1024 * 1024 * 50;
 
         /// <summary>
         /// An archive file extension supported by Cloudflare's free tier.

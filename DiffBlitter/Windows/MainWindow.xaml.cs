@@ -580,16 +580,7 @@ namespace DiffBlitter.Windows
 
         private void TargetVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_detectedSnapshot == null)
-                throw new NullReferenceException("Unknown source content version.");
-
-            // update target information
-            var targetSnapshot = TargetVersion.SelectedValue as Snapshot;
-            TargetName.Text = targetSnapshot?.Name;
-            TargetDescription.Text = targetSnapshot?.Description;
-
-            Patch.IsEnabled = targetSnapshot != null;
-            Patch.Content = targetSnapshot == null || _detectedSnapshot.Version < targetSnapshot.Version ? "Update" : "Rollback";
+            UpateTargetPatchState();
         }
 
         private void Patch_Click(object sender, RoutedEventArgs e)
@@ -634,6 +625,8 @@ namespace DiffBlitter.Windows
                 MessageBox.Show("Failed to detect current version. Please re-install the game from a fresh copy and run the updater again afterwards.",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            UpateTargetPatchState();
         }
 
         #endregion
@@ -677,6 +670,20 @@ namespace DiffBlitter.Windows
             // propagate any exception if desired
             if (!swallowException && e.Error != null)
                 throw e.Error;
+        }
+
+        public void UpateTargetPatchState()
+        {
+            if (_detectedSnapshot == null)
+                throw new NullReferenceException("Unknown source content version.");
+
+            // update target information
+            var targetSnapshot = TargetVersion.SelectedValue as Snapshot;
+            TargetName.Text = targetSnapshot?.Name;
+            TargetDescription.Text = targetSnapshot?.Description;
+
+            Patch.IsEnabled = targetSnapshot != null;
+            Patch.Content = targetSnapshot == null || _detectedSnapshot.Version < targetSnapshot.Version ? "Update" : "Rollback";
         }
 
         #endregion

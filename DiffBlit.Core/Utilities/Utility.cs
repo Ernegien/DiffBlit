@@ -28,25 +28,18 @@ namespace DiffBlit.Core.Utilities
         /// <returns></returns>
         public static byte[] ComputeHash(string filePath, ProgressChangedEventHandler progressHandler = null)
         {
-            if (progressHandler == null)
-            {
-                using (FileStream file = File.OpenRead(filePath))
-                using (SHA512 sha = SHA512.Create())
-                {
-                    return sha.ComputeHash(file);
-                }
-            }
+            byte[] buffer = new byte[1024 * 64];
 
-            using (FileStream file = File.OpenRead(filePath))
-            using (HashAlgorithm hash = SHA512.Create())
+            // TODO: support other URIs
+            using (FileStream file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, buffer.Length))
+            using (SHA512 hash = SHA512.Create())
             using (CryptoStream hashStream = new CryptoStream(file, hash, CryptoStreamMode.Read))
             {
                 int bytesRead;
-                byte[] buffer = new byte[1024 * 64];
                 while ((bytesRead = hashStream.Read(buffer, 0, buffer.Length)) > 0)
                 {
-                    int progressPercentage = (int) ((float) file.Position / file.Length * 100.0f);
-                    progressHandler.Invoke(null, new ProgressChangedEventArgs(progressPercentage, bytesRead));
+                    progressHandler?.Invoke(null,
+                        new ProgressChangedEventArgs((int) ((float) file.Position / file.Length * 100.0f), bytesRead));
                 }
                 return hash.Hash;
             }
@@ -59,6 +52,7 @@ namespace DiffBlit.Core.Utilities
         /// <param name="compressedFile"></param>
         public static void Compress(string origFile, string compressedFile)
         {
+            // TODO: support other URIs
             // TODO: if source and destination are same, work against temp location
             using (FileStream input = File.OpenRead(origFile))
             using (FileStream output = File.OpenWrite(compressedFile))
@@ -75,6 +69,7 @@ namespace DiffBlit.Core.Utilities
         /// <param name="decompressedFile"></param>
         public static void Decompress(string compressedFile, string decompressedFile)
         {
+            // TODO: support other URIs
             // TODO: if source and destination are same, work against temp location
             using (FileStream input = File.OpenRead(compressedFile))
             using (BZip2InputStream zip = new BZip2InputStream(input))
@@ -94,6 +89,7 @@ namespace DiffBlit.Core.Utilities
             if (!outputFilePath.Uri.IsFile)
                 throw new ArgumentException("Output path must be a file.");
 
+            // TODO: support other URIs
             // TODO: use ReadOnlyFile and refactor to use sourceBasePath
             using (FileStream fs = File.OpenWrite(outputFilePath))
             {
@@ -115,6 +111,7 @@ namespace DiffBlit.Core.Utilities
         /// <returns></returns>
         public static Dictionary<string, string> GetFileHashes(string directory, bool recursive = true)
         {
+            // TODO: support other URIs
             var fileHashes = new Dictionary<string, string>();
             var files = Directory.GetFiles(directory, "*", recursive ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories);
             foreach (var file in files)
